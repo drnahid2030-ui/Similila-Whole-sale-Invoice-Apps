@@ -3,37 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>বই ইনভয়েস</title>
+<title>সিমিলিয়া প্রকাশনী — ইনভয়েস</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F5F0E4; --paper-2:#EDE6D4; --ink:#241F16; --ink-soft:#5B5342;
-    --forest:#1F3D2E; --forest-2:#2C5540; --gold:#B8873F; --line:#D8CDB2;
-    --danger:#9C3B2E; --white:#FFFDF8; --radius:4px;
+    --paper:#F3F6F4; --paper-2:#E6EEE9; --ink:#152016; --ink-soft:#4B5A50;
+    --forest:#1B7A4D; --forest-2:#156B42; --blue:#123B66; --blue-2:#0C2A4A; --line:#CFE0D4;
+    --danger:#9C3B2E; --white:#FFFFFF; --radius:6px;
+    --banner:#123B66; --banner-2:#1B7A4D;
   }
   *{box-sizing:border-box;}
   body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Hind Siliguri', sans-serif; }
   h1,h2,.brand{ font-family:'Tiro Bangla', serif; }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
   .shell{ display:flex; min-height:100vh; }
-  .side{ width:200px; background:var(--forest); color:var(--paper); padding:28px 0; flex-shrink:0; }
+  .side{ width:200px; background:linear-gradient(160deg, var(--blue), var(--forest)); color:var(--paper); padding:28px 0; flex-shrink:0; }
   .brand{ font-size:22px; padding:0 22px 22px; border-bottom:1px solid rgba(245,240,228,0.18); margin-bottom:10px; line-height:1.3; }
-  .brand small{ display:block; font-family:'Hind Siliguri', sans-serif; font-size:12px; color:#C9BE9C; margin-top:4px; }
-  .side p.tag{ padding:0 22px; font-size:12px; color:#C9BE9C; margin-top:14px; line-height:1.5; }
-  .side a.adminlink{ display:block; margin:18px 22px 0; font-size:12.5px; color:var(--gold); text-decoration:none; }
+  .brand small{ display:block; font-family:'Hind Siliguri', sans-serif; font-size:12px; color:#BFE0CD; margin-top:4px; }
+  .side p.tag{ padding:0 22px; font-size:12px; color:#BFE0CD; margin-top:14px; line-height:1.5; }
+  .side a.adminlink{ display:block; margin:18px 22px 0; font-size:12.5px; color:#BFE0CD; text-decoration:none; font-weight:600; }
   .side a.adminlink:hover{ text-decoration:underline; }
   .main{ flex:1; padding:36px 40px; max-width:980px; }
-  .pagehead{ margin-bottom:26px; }
+  .pagehead{ margin-bottom:26px; animation:fadeUp .5s ease both; }
   .pagehead h1{ font-size:26px; margin:0 0 4px; }
   .pagehead p{ margin:0; color:var(--ink-soft); font-size:14px; }
-  .panel{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; }
+  .panel{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; animation:fadeUp .5s ease both; }
+  .panel:nth-of-type(1){ animation-delay:.05s; }
+  .panel:nth-of-type(2){ animation-delay:.15s; }
+  .panel:nth-of-type(3){ animation-delay:.25s; }
   .panel h2{ font-size:17px; margin:0 0 16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
   .form-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
   .field{ flex:1; min-width:160px; }
   .field label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px; }
-  .field input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:15px; background:var(--paper); color:var(--ink); }
+  .field input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:15px; background:var(--paper); color:var(--ink); transition:border-color .15s ease, background .15s ease; }
   .field input:focus{ outline:none; border-color:var(--forest-2); background:var(--white); }
-  button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+  button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease, background .15s ease; }
+  button.btn:active{ transform:scale(0.97); }
   .btn-primary{ background:var(--forest); color:var(--white); }
   .btn-primary:hover{ background:var(--forest-2); }
   .btn-ghost{ background:none; border:1px solid var(--line); color:var(--ink-soft); }
@@ -49,36 +55,64 @@
   .empty-row td{ text-align:center; color:var(--ink-soft); padding:26px 10px; font-style:italic; }
   .qty-input{ width:56px; padding:6px 8px; border:1px solid var(--line); border-radius:var(--radius); text-align:center; font-family:'Hind Siliguri', sans-serif; }
   .search-wrap{ position:relative; margin-bottom:16px; }
-  .search-wrap input{ width:100%; padding:13px 16px; font-size:16px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; background:var(--white); }
+  .search-wrap input{ width:100%; padding:13px 16px; font-size:16px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; background:var(--white); transition:border-color .15s ease; }
   .search-wrap input:focus{ outline:none; border-color:var(--forest-2); }
   .results{ display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; }
-  .result-item{ display:flex; justify-content:space-between; align-items:center; padding:11px 14px; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); cursor:pointer; }
-  .result-item:hover{ border-color:var(--forest-2); background:var(--paper-2); }
+  .result-item{ display:flex; justify-content:space-between; align-items:center; padding:11px 14px; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .12s ease; animation:fadeUp .3s ease both; }
+  .result-item:hover{ border-color:var(--forest-2); background:var(--paper-2); transform:translateX(2px); }
   .result-item .rname{ font-weight:600; }
+  .result-item .rauthor{ display:block; font-size:12px; color:var(--ink-soft); font-weight:400; margin-top:1px; }
   .result-item .rprice{ color:var(--forest); font-weight:600; white-space:nowrap; margin-left:12px; }
   .no-results{ color:var(--ink-soft); font-style:italic; padding:10px 2px; font-size:14px; }
+  .cart-author{ display:block; font-size:12px; color:var(--ink-soft); margin-top:1px; }
+  .discount-row{ display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:14px; }
+  .discount-row label{ font-size:14px; color:var(--ink-soft); }
+  .discount-row input{ width:110px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); text-align:right; font-family:'Hind Siliguri', sans-serif; }
   .total-bar{ display:flex; justify-content:flex-end; align-items:center; gap:14px; padding-top:16px; margin-top:6px; border-top:2px solid var(--forest); }
   .total-bar .label{ font-size:15px; color:var(--ink-soft); }
-  .total-bar .amount{ font-size:26px; font-weight:700; color:var(--forest); font-family:'Tiro Bangla', serif; }
+  .total-bar .amount{ font-size:26px; font-weight:700; color:var(--forest); font-family:'Tiro Bangla', serif; transition:color .2s ease; }
   .actions-bar{ display:flex; justify-content:space-between; align-items:center; margin-top:18px; }
-  .sync-note{ font-size:12.5px; color:var(--ink-soft); margin-top:-8px; margin-bottom:16px; }
   #printSheet{ display:none; }
+
   @media print{
     body *{ visibility:hidden; }
     #printSheet, #printSheet *{ visibility:visible; }
-    #printSheet{ display:block; position:absolute; top:0; left:0; width:100%; padding:20px; }
-    .p-head{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #241F16; padding-bottom:14px; margin-bottom:18px; }
-    .p-shop{ font-family:'Tiro Bangla', serif; font-size:24px; }
-    .p-shop small{ display:block; font-family:'Hind Siliguri', sans-serif; font-size:12px; color:#5B5342; margin-top:3px; }
-    .p-meta{ text-align:right; font-size:13px; color:#333; }
-    .p-meta div{ margin-bottom:2px; }
-    #printSheet table{ width:100%; border-collapse:collapse; margin-top:10px; }
-    #printSheet th{ text-align:left; border-bottom:1px solid #241F16; padding:6px 4px; font-size:13px; }
-    #printSheet td{ padding:7px 4px; border-bottom:1px solid #ddd; font-size:14px; }
-    #printSheet .num{ text-align:right; }
-    #printSheet .p-total-row td{ border-top:2px solid #241F16; border-bottom:none; font-weight:700; font-size:16px; padding-top:12px; }
-    .p-foot{ margin-top:30px; font-size:12.5px; color:#5B5342; text-align:center; }
+    #printSheet{ display:block; position:absolute; top:0; left:0; width:100%; padding:0 22px 24px; font-family:'Hind Siliguri', sans-serif; color:#241F16; }
+
+    .p-banner{
+      display:flex; justify-content:space-between; align-items:flex-start;
+      background:linear-gradient(135deg, var(--banner), var(--banner-2));
+      color:#fff; padding:20px 24px; margin:0 -22px 18px; border-radius:0 0 10px 10px;
+    }
+    .p-shopname{ font-family:'Tiro Bangla', serif; font-size:26px; }
+    .p-shoptag{ font-size:12px; color:#D9EAE0; margin-top:3px; }
+    .p-copy-badge{ background:#fff; color:var(--blue); font-size:11px; font-weight:700; padding:5px 12px; border-radius:20px; white-space:nowrap; margin-top:2px; }
+
+    .p-info-list{ margin-bottom:18px; max-width:340px; }
+    .p-info-item{ display:flex; gap:10px; padding:5px 0; border-bottom:1px dashed #CFE0D4; font-size:13.5px; }
+    .p-info-label{ color:#4B5A50; width:80px; flex-shrink:0; }
+    .p-info-value{ font-weight:600; }
+
+    .p-items-table{ width:100%; border-collapse:collapse; }
+    .p-items-table th{ text-align:left; border-bottom:2px solid #152016; padding:6px 5px; font-size:12.5px; color:#4B5A50; }
+    .p-items-table td{ padding:7px 5px; border-bottom:1px solid #E1EDE6; font-size:13.5px; }
+    .p-items-table .p-book-author{ display:block; font-size:11.5px; color:#4B5A50; margin-top:1px; }
+    .p-items-table .num{ text-align:right; }
+
+    .p-summary{ display:flex; justify-content:flex-end; margin-top:8px; }
+    .p-summary table{ width:auto; min-width:230px; border-collapse:collapse; }
+    .p-summary td{ padding:5px 6px; font-size:13.5px; border:none; }
+    .p-summary .num{ text-align:right; font-weight:600; }
+    .p-summary .p-grand-row td{ border-top:2px solid #152016; font-size:16px; font-weight:700; padding-top:9px; }
+
+    .p-words{ margin-top:14px; font-size:13px; }
+    .p-words b{ font-weight:600; }
+
+    .p-footer-row{ display:flex; justify-content:space-between; align-items:flex-end; margin-top:56px; }
+    .p-sign{ border-top:1px solid #152016; padding-top:6px; font-size:12.5px; width:180px; text-align:center; }
+    .p-thanks{ font-size:12px; color:#4B5A50; }
   }
+
   @media (max-width:720px){
     .shell{ flex-direction:column; }
     .side{ width:100%; }
@@ -91,7 +125,7 @@
 
 <div class="shell">
   <div class="side">
-    <div class="brand">বই ভাণ্ডার<small>ইনভয়েস সিস্টেম</small></div>
+    <div class="brand">সিমিলিয়া প্রকাশনী<small>ইনভয়েস সিস্টেম</small></div>
     <p class="tag">বই খুঁজুন, ক্লিক করে ইনভয়েসে যোগ করুন, প্রিন্ট করুন।</p>
     <a class="adminlink" href="admin.html">📚 বই এন্ট্রি প্যানেল →</a>
   </div>
@@ -120,7 +154,7 @@
           <input type="text" id="custAddress" placeholder="ক্রেতার ঠিকানা">
         </div>
         <div class="field">
-          <label>ইনভয়েস নং</label>
+          <label>মেমো নং</label>
           <input type="text" id="invNo" readonly>
         </div>
         <div class="field">
@@ -147,6 +181,11 @@
         </tbody>
       </table>
 
+      <div class="discount-row">
+        <label for="discountInput">ছাড় (৳)</label>
+        <input type="number" id="discountInput" min="0" step="0.01" value="0">
+      </div>
+
       <div class="total-bar">
         <span class="label">সর্বমোট</span>
         <span class="amount" id="grandTotal">৳ 0</span>
@@ -160,25 +199,45 @@
   </div>
 </div>
 
+<!-- ===== PRINT-ONLY MEMO ===== -->
 <div id="printSheet">
-  <div class="p-head">
-    <div class="p-shop">বই ভাণ্ডার<small>ইনভয়েস</small></div>
-    <div class="p-meta">
-      <div id="p-invno"></div>
-      <div id="p-date"></div>
-      <div id="p-cust"></div>
-      <div id="p-mobile"></div>
-      <div id="p-address"></div>
+  <div class="p-banner">
+    <div>
+      <div class="p-shopname">সিমিলিয়া প্রকাশনী</div>
+      <div class="p-shoptag">হোমিওপ্যাথিক ও চিকিৎসা বিষয়ক বই বিক্রেতা</div>
     </div>
+    <div class="p-copy-badge">কাস্টমার কপি</div>
   </div>
-  <table>
-    <thead><tr><th>বইয়ের নাম</th><th class="num">দর</th><th class="num">পরিমাণ</th><th class="num">সাবটোটাল</th></tr></thead>
+
+  <div class="p-info-list">
+    <div class="p-info-item"><span class="p-info-label">নাম</span><span class="p-info-value" id="p-cust"></span></div>
+    <div class="p-info-item"><span class="p-info-label">ঠিকানা</span><span class="p-info-value" id="p-address"></span></div>
+    <div class="p-info-item" id="p-mobile-row"><span class="p-info-label">মোবাইল</span><span class="p-info-value" id="p-mobile"></span></div>
+    <div class="p-info-item"><span class="p-info-label">মেমো নং</span><span class="p-info-value" id="p-invno"></span></div>
+    <div class="p-info-item"><span class="p-info-label">তারিখ</span><span class="p-info-value" id="p-date"></span></div>
+  </div>
+
+  <table class="p-items-table">
+    <thead>
+      <tr><th>পরিমাণ</th><th>বইয়ের নাম</th><th class="num">দর</th><th class="num">মোট টাকা</th></tr>
+    </thead>
     <tbody id="p-items"></tbody>
-    <tfoot>
-      <tr class="p-total-row"><td colspan="3">সর্বমোট</td><td class="num" id="p-total"></td></tr>
-    </tfoot>
   </table>
-  <div class="p-foot">ধন্যবাদ — আবার আসবেন।</div>
+
+  <div class="p-summary">
+    <table>
+      <tr><td>মোট</td><td class="num" id="p-subtotal"></td></tr>
+      <tr id="p-discount-row"><td>ছাড়</td><td class="num" id="p-discount"></td></tr>
+      <tr class="p-grand-row"><td>সর্বমোট</td><td class="num" id="p-total"></td></tr>
+    </table>
+  </div>
+
+  <div class="p-words">কথায় : <b>(<span id="p-words"></span>)</b></div>
+
+  <div class="p-footer-row">
+    <div class="p-sign">বিক্রেতার স্বাক্ষর</div>
+    <div class="p-thanks">ধন্যবাদ — আবার আসবেন।</div>
+  </div>
 </div>
 
 <script type="module">
@@ -206,26 +265,54 @@
   const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
   const escapeHtml = str => { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; };
 
-  // Real-time product list — always fresh from admin panel
-  onSnapshot(query(productsCol, orderBy('name')), (snapshot)=>{
-    products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    runSearch();
-  });
+  // ---- Number to words (English, matches printed-memo convention) ----
+  const ONES = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const TENS = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function twoDigits(n){ return n < 20 ? ONES[n] : (TENS[Math.floor(n/10)] + (n%10 ? ' ' + ONES[n%10] : '')); }
+  function threeDigits(n){
+    if(n > 99) return ONES[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + twoDigits(n%100) : '');
+    return twoDigits(n);
+  }
+  function numberToWords(num){
+    num = Math.round(num);
+    if(num === 0) return 'Zero';
+    let n = num, parts = [];
+    const crore = Math.floor(n/10000000); n %= 10000000;
+    const lakh = Math.floor(n/100000); n %= 100000;
+    const thousand = Math.floor(n/1000); n %= 1000;
+    const rest = n;
+    if(crore) parts.push(threeDigits(crore) + ' Crore');
+    if(lakh) parts.push(threeDigits(lakh) + ' Lakh');
+    if(thousand) parts.push(threeDigits(thousand) + ' Thousand');
+    if(rest) parts.push(threeDigits(rest));
+    return parts.join(' ').toUpperCase();
+  }
 
   const searchBox = document.getElementById('searchBox');
   const resultsBox = document.getElementById('resultsBox');
 
+  // Real-time product list — always fresh from admin panel
+  onSnapshot(query(productsCol, orderBy('name')), (snapshot)=>{
+    products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    runSearch();
+  }, (err)=>{
+    resultsBox.innerHTML = '<div class="no-results">ডেটা লোড করা যায়নি: ' + escapeHtml(err.message) + '</div>';
+  });
+
   function runSearch(){
     const q = searchBox.value.trim().toLowerCase();
     if(!q){ resultsBox.innerHTML = ''; return; }
-    const matches = products.filter(p => p.name.toLowerCase().includes(q));
+    const matches = products.filter(p =>
+      p.name.toLowerCase().includes(q) || (p.author && p.author.toLowerCase().includes(q))
+    );
     if(matches.length === 0){
       resultsBox.innerHTML = '<div class="no-results">কোনো বই পাওয়া যায়নি</div>';
       return;
     }
     resultsBox.innerHTML = matches.map(p => `
       <div class="result-item" data-add="${p.id}">
-        <span class="rname">${escapeHtml(p.name)}</span>
+        <span class="rname">${escapeHtml(p.name)}${p.author ? `<span class="rauthor">${escapeHtml(p.author)}</span>` : ''}</span>
         <span class="rprice">${fmt(p.price)}</span>
       </div>
     `).join('');
@@ -240,50 +327,58 @@
     if(!p) return;
     const existing = cart.find(x=>x.id===id);
     if(existing){ existing.qty += 1; }
-    else{ cart.push({ id:p.id, name:p.name, price:p.price, qty:1 }); }
+    else{ cart.push({ id:p.id, name:p.name, author:p.author||'', price:p.price, qty:1 }); }
     renderCart();
   }
 
   const cartBody = document.getElementById('cartBody');
+  const discountInput = document.getElementById('discountInput');
+
   function renderCart(){
     if(cart.length === 0){
       cartBody.innerHTML = '<tr class="empty-row"><td colspan="5">এখনো কোনো বই যোগ করা হয়নি</td></tr>';
-      document.getElementById('grandTotal').textContent = fmt(0);
-      return;
+    } else {
+      cartBody.innerHTML = cart.map((item, idx) => `
+        <tr>
+          <td>${escapeHtml(item.name)}${item.author ? `<span class="cart-author">${escapeHtml(item.author)}</span>` : ''}</td>
+          <td class="num">${fmt(item.price)}</td>
+          <td class="num"><input type="number" class="qty-input" min="1" value="${item.qty}" data-qty="${idx}"></td>
+          <td class="num">${fmt(item.price * item.qty)}</td>
+          <td class="num"><button class="btn btn-danger btn-sm" data-remove="${idx}">✕</button></td>
+        </tr>
+      `).join('');
+
+      cartBody.querySelectorAll('[data-qty]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const idx = parseInt(inp.dataset.qty);
+          let val = parseInt(inp.value);
+          if(isNaN(val) || val < 1) val = 1;
+          cart[idx].qty = val;
+          renderCart();
+        });
+      });
+      cartBody.querySelectorAll('[data-remove]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          cart.splice(parseInt(btn.dataset.remove), 1);
+          renderCart();
+        });
+      });
     }
-    cartBody.innerHTML = cart.map((item, idx) => `
-      <tr>
-        <td>${escapeHtml(item.name)}</td>
-        <td class="num">${fmt(item.price)}</td>
-        <td class="num"><input type="number" class="qty-input" min="1" value="${item.qty}" data-qty="${idx}"></td>
-        <td class="num">${fmt(item.price * item.qty)}</td>
-        <td class="num"><button class="btn btn-danger btn-sm" data-remove="${idx}">✕</button></td>
-      </tr>
-    `).join('');
-
-    cartBody.querySelectorAll('[data-qty]').forEach(inp=>{
-      inp.addEventListener('input', ()=>{
-        const idx = parseInt(inp.dataset.qty);
-        let val = parseInt(inp.value);
-        if(isNaN(val) || val < 1) val = 1;
-        cart[idx].qty = val;
-        renderCart();
-      });
-    });
-    cartBody.querySelectorAll('[data-remove]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        cart.splice(parseInt(btn.dataset.remove), 1);
-        renderCart();
-      });
-    });
-
-    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    document.getElementById('grandTotal').textContent = fmt(total);
+    updateGrandTotal();
   }
+
+  function getSubtotal(){ return cart.reduce((sum, i) => sum + i.price * i.qty, 0); }
+  function getDiscount(){ const v = parseFloat(discountInput.value); return isNaN(v) || v < 0 ? 0 : v; }
+  function updateGrandTotal(){
+    const net = Math.max(0, getSubtotal() - getDiscount());
+    document.getElementById('grandTotal').textContent = fmt(net);
+  }
+  discountInput.addEventListener('input', updateGrandTotal);
 
   document.getElementById('clearCartBtn').addEventListener('click', ()=>{
     if(cart.length && !confirm('ইনভয়েস খালি করতে চান?')) return;
     cart = [];
+    discountInput.value = 0;
     renderCart();
   });
 
@@ -303,26 +398,37 @@
       alert('প্রিন্ট করার আগে অন্তত একটি বই যোগ করুন।');
       return;
     }
-    document.getElementById('p-invno').textContent = 'ইনভয়েস নং: ' + document.getElementById('invNo').value;
-    document.getElementById('p-date').textContent = 'তারিখ: ' + document.getElementById('invDate').value;
+    document.getElementById('p-invno').textContent = document.getElementById('invNo').value;
+    document.getElementById('p-date').textContent = document.getElementById('invDate').value;
 
     const custName = document.getElementById('custName').value.trim();
     const custMobile = document.getElementById('custMobile').value.trim();
     const custAddress = document.getElementById('custAddress').value.trim();
-    document.getElementById('p-cust').textContent = custName ? ('ক্রেতা: ' + custName) : '';
-    document.getElementById('p-mobile').textContent = custMobile ? ('মোবাইল: ' + custMobile) : '';
-    document.getElementById('p-address').textContent = custAddress ? ('ঠিকানা: ' + custAddress) : '';
+    document.getElementById('p-cust').textContent = custName || '—';
+    document.getElementById('p-address').textContent = custAddress || '—';
+    const mobileRow = document.getElementById('p-mobile-row');
+    if(custMobile){ mobileRow.style.display = ''; document.getElementById('p-mobile').textContent = custMobile; }
+    else{ mobileRow.style.display = 'none'; }
 
     document.getElementById('p-items').innerHTML = cart.map(item => `
       <tr>
-        <td>${escapeHtml(item.name)}</td>
-        <td class="num">${fmt(item.price)}</td>
         <td class="num">${item.qty}</td>
+        <td>${escapeHtml(item.name)}${item.author ? `<span class="p-book-author">${escapeHtml(item.author)}</span>` : ''}</td>
+        <td class="num">${fmt(item.price)}</td>
         <td class="num">${fmt(item.price * item.qty)}</td>
       </tr>
     `).join('');
-    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    document.getElementById('p-total').textContent = fmt(total);
+
+    const subtotal = getSubtotal();
+    const discount = getDiscount();
+    const net = Math.max(0, subtotal - discount);
+
+    document.getElementById('p-subtotal').textContent = fmt(subtotal);
+    const discountRow = document.getElementById('p-discount-row');
+    if(discount > 0){ discountRow.style.display = ''; document.getElementById('p-discount').textContent = fmt(discount); }
+    else{ discountRow.style.display = 'none'; }
+    document.getElementById('p-total').textContent = fmt(net);
+    document.getElementById('p-words').textContent = numberToWords(net) + ' TAKA ONLY.';
 
     window.print();
     setInvoiceMeta();
