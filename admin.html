@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>বই এন্ট্রি — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F0E4; --paper-2:#EDE6D4; --ink:#241F16; --ink-soft:#5B5342;
+    --forest:#1F3D2E; --forest-2:#2C5540; --gold:#B8873F; --line:#D8CDB2;
+    --danger:#9C3B2E; --white:#FFFDF8; --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Hind Siliguri', sans-serif; }
+  h1,h2,.brand{ font-family:'Tiro Bangla', serif; }
+  .shell{ display:flex; min-height:100vh; }
+  .side{ width:200px; background:var(--forest); color:var(--paper); padding:28px 0; flex-shrink:0; }
+  .brand{ font-size:22px; padding:0 22px 22px; border-bottom:1px solid rgba(245,240,228,0.18); margin-bottom:10px; line-height:1.3; }
+  .brand small{ display:block; font-family:'Hind Siliguri', sans-serif; font-size:12px; color:#C9BE9C; margin-top:4px; }
+  .side p.tag{ padding:0 22px; font-size:12px; color:#C9BE9C; margin-top:14px; line-height:1.5; }
+  .main{ flex:1; padding:36px 40px; max-width:900px; }
+  .pagehead{ margin-bottom:26px; }
+  .pagehead h1{ font-size:26px; margin:0 0 4px; }
+  .pagehead p{ margin:0; color:var(--ink-soft); font-size:14px; }
+  .panel{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; }
+  .panel h2{ font-size:17px; margin:0 0 16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  .form-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .field{ flex:1; min-width:160px; }
+  .field label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px; }
+  .field input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:15px; background:var(--paper); color:var(--ink); }
+  .field input:focus{ outline:none; border-color:var(--forest-2); background:var(--white); }
+  button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-primary{ background:var(--forest); color:var(--white); }
+  .btn-primary:hover{ background:var(--forest-2); }
+  .btn-primary:disabled{ opacity:0.6; cursor:not-allowed; }
+  .btn-ghost{ background:none; border:1px solid var(--line); color:var(--ink-soft); }
+  .btn-ghost:hover{ border-color:var(--ink-soft); color:var(--ink); }
+  .btn-danger{ background:none; color:var(--danger); border:1px solid transparent; }
+  .btn-danger:hover{ text-decoration:underline; }
+  .btn-sm{ padding:6px 12px; font-size:13px; }
+  table{ width:100%; border-collapse:collapse; font-size:14.5px; }
+  th{ text-align:left; font-size:12.5px; color:var(--ink-soft); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--line); }
+  td{ padding:10px 10px; border-bottom:1px solid var(--paper-2); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .empty-row td{ text-align:center; color:var(--ink-soft); padding:26px 10px; font-style:italic; }
+  .status{ font-size:13px; padding:8px 12px; border-radius:var(--radius); margin-bottom:16px; display:none; }
+  .status.show{ display:block; }
+  .status.err{ background:#F6E4E0; color:var(--danger); }
+  .status.ok{ background:#E4EDE7; color:var(--forest); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="side">
+    <div class="brand">বই ভাণ্ডার<small>Admin Panel</small></div>
+    <p class="tag">এখান থেকে বই যোগ, এডিট বা মুছে ফেললে সাথে সাথে ইনভয়েস প্যানেলে দেখা যাবে।</p>
+    <a class="tag" style="display:block;margin-top:14px;color:var(--gold);text-decoration:none;" href="invoice.html">🧾 ইনভয়েস প্যানেলে যান →</a>
+  </div>
+
+  <div class="main">
+    <div class="pagehead">
+      <h1>বই এন্ট্রি</h1>
+      <p>নতুন বই যোগ করুন অথবা দাম হালনাগাদ করুন — Firebase-এ সরাসরি সেভ হয়।</p>
+    </div>
+
+    <div id="statusBox" class="status"></div>
+
+    <div class="panel">
+      <h2 id="formTitle">নতুন বই যোগ করুন</h2>
+      <div class="form-row">
+        <div class="field">
+          <label>বইয়ের নাম</label>
+          <input type="text" id="pName" placeholder="যেমনঃ Organon of Medicine">
+        </div>
+        <div class="field">
+          <label>দাম (৳)</label>
+          <input type="number" id="pPrice" placeholder="মূল্য" min="0" step="0.01">
+        </div>
+        <div>
+          <button class="btn btn-primary" id="saveProductBtn">যোগ করুন</button>
+        </div>
+        <div id="cancelEditWrap" style="display:none;">
+          <button class="btn btn-ghost" id="cancelEditBtn">বাতিল</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>)</h2>
+      <table>
+        <thead><tr><th>বইয়ের নাম</th><th class="num">দাম</th><th></th></tr></thead>
+        <tbody id="productBody">
+          <tr class="empty-row"><td colspan="3">লোড হচ্ছে...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+    onSnapshot, serverTimestamp, orderBy, query
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBlokj2o7Yd7431j5NIRgLOKBiKP1JjPqw",
+    authDomain: "similia-invoice-apps.firebaseapp.com",
+    projectId: "similia-invoice-apps",
+    storageBucket: "similia-invoice-apps.firebasestorage.app",
+    messagingSenderId: "637399887727",
+    appId: "1:637399887727:web:3467fa9ecfc94fa38e829a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const productsCol = collection(db, "products");
+
+  let products = [];
+  let editingId = null;
+
+  const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+  const escapeHtml = str => { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; };
+
+  const statusBox = document.getElementById('statusBox');
+  function showStatus(msg, type){
+    statusBox.textContent = msg;
+    statusBox.className = 'status show ' + type;
+    setTimeout(()=>{ statusBox.classList.remove('show'); }, 3000);
+  }
+
+  const pName = document.getElementById('pName');
+  const pPrice = document.getElementById('pPrice');
+  const saveProductBtn = document.getElementById('saveProductBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const cancelEditWrap = document.getElementById('cancelEditWrap');
+  const formTitle = document.getElementById('formTitle');
+  const productBody = document.getElementById('productBody');
+  const prodCount = document.getElementById('prodCount');
+
+  // Real-time listener — keeps the list in sync automatically
+  onSnapshot(query(productsCol, orderBy('name')), (snapshot)=>{
+    products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderProducts();
+  }, (err)=>{
+    showStatus('ডেটা লোড করতে সমস্যা হয়েছে: ' + err.message, 'err');
+  });
+
+  function renderProducts(){
+    prodCount.textContent = products.length;
+    if(products.length === 0){
+      productBody.innerHTML = '<tr class="empty-row"><td colspan="3">কোনো বই যোগ করা হয়নি</td></tr>';
+      return;
+    }
+    productBody.innerHTML = products.map(p => `
+      <tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td class="num">${fmt(p.price)}</td>
+        <td class="num">
+          <button class="btn btn-ghost btn-sm" data-edit="${p.id}">এডিট</button>
+          <button class="btn btn-danger btn-sm" data-del="${p.id}">মুছুন</button>
+        </td>
+      </tr>
+    `).join('');
+
+    productBody.querySelectorAll('[data-edit]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const p = products.find(x=>x.id===b.dataset.edit);
+        if(!p) return;
+        editingId = p.id;
+        pName.value = p.name;
+        pPrice.value = p.price;
+        formTitle.textContent = 'বই আপডেট করুন';
+        saveProductBtn.textContent = 'আপডেট করুন';
+        cancelEditWrap.style.display = 'block';
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+    });
+    productBody.querySelectorAll('[data-del]').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        if(!confirm('এই বইটি মুছে ফেলতে চান?')) return;
+        try{
+          await deleteDoc(doc(db, 'products', b.dataset.del));
+          showStatus('বই মুছে ফেলা হয়েছে।', 'ok');
+        }catch(e){ showStatus('মুছতে সমস্যা হয়েছে: ' + e.message, 'err'); }
+      });
+    });
+  }
+
+  saveProductBtn.addEventListener('click', async ()=>{
+    const name = pName.value.trim();
+    const price = parseFloat(pPrice.value);
+    if(!name || isNaN(price) || price < 0){
+      showStatus('বইয়ের নাম ও সঠিক দাম দিন।', 'err');
+      return;
+    }
+    saveProductBtn.disabled = true;
+    try{
+      if(editingId){
+        await updateDoc(doc(db, 'products', editingId), { name, price });
+        showStatus('বই আপডেট হয়েছে।', 'ok');
+        editingId = null;
+        formTitle.textContent = 'নতুন বই যোগ করুন';
+        saveProductBtn.textContent = 'যোগ করুন';
+        cancelEditWrap.style.display = 'none';
+      } else {
+        await addDoc(productsCol, { name, price, createdAt: serverTimestamp() });
+        showStatus('নতুন বই যোগ হয়েছে।', 'ok');
+      }
+      pName.value = ''; pPrice.value = '';
+    }catch(e){
+      showStatus('সেভ করতে সমস্যা হয়েছে: ' + e.message, 'err');
+    }
+    saveProductBtn.disabled = false;
+  });
+
+  cancelEditBtn.addEventListener('click', ()=>{
+    editingId = null;
+    pName.value = ''; pPrice.value = '';
+    formTitle.textContent = 'নতুন বই যোগ করুন';
+    saveProductBtn.textContent = 'যোগ করুন';
+    cancelEditWrap.style.display = 'none';
+  });
+</script>
+
+</body>
+</html>
