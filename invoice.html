@@ -88,15 +88,14 @@
     .p-shoptag{ font-size:12px; color:#D9EAE0; margin-top:3px; }
     .p-copy-badge{ background:#fff; color:var(--blue); font-size:11px; font-weight:700; padding:5px 12px; border-radius:20px; white-space:nowrap; margin-top:2px; }
 
-    .p-info-list{ margin-bottom:18px; max-width:340px; }
-    .p-info-item{ display:flex; gap:10px; padding:5px 0; border-bottom:1px dashed #CFE0D4; font-size:13.5px; }
-    .p-info-label{ color:#4B5A50; width:80px; flex-shrink:0; }
-    .p-info-value{ font-weight:600; }
+    .p-info-grid{ display:grid; grid-template-columns:78px 1fr 78px 1fr; row-gap:7px; column-gap:12px; margin-bottom:18px; font-size:13.5px; max-width:520px; }
+    .p-info-grid .lbl{ color:#4B5A50; }
+    .p-info-grid .val{ font-weight:600; }
 
     .p-items-table{ width:100%; border-collapse:collapse; }
-    .p-items-table th{ text-align:left; border-bottom:2px solid #152016; padding:6px 5px; font-size:12.5px; color:#4B5A50; }
-    .p-items-table td{ padding:7px 5px; border-bottom:1px solid #E1EDE6; font-size:13.5px; }
-    .p-items-table .p-book-author{ display:block; font-size:11.5px; color:#4B5A50; margin-top:1px; }
+    .p-items-table th{ text-align:left; border-bottom:2px solid #152016; padding:7px 10px; font-size:12.5px; color:#4B5A50; }
+    .p-items-table td{ padding:9px 10px; border-bottom:1px solid #E1EDE6; font-size:13.5px; }
+    .p-items-table th:first-child, .p-items-table td:first-child{ width:56px; text-align:center; }
     .p-items-table .num{ text-align:right; }
 
     .p-summary{ display:flex; justify-content:flex-end; margin-top:8px; }
@@ -209,17 +208,18 @@
     <div class="p-copy-badge">কাস্টমার কপি</div>
   </div>
 
-  <div class="p-info-list">
-    <div class="p-info-item"><span class="p-info-label">নাম</span><span class="p-info-value" id="p-cust"></span></div>
-    <div class="p-info-item"><span class="p-info-label">ঠিকানা</span><span class="p-info-value" id="p-address"></span></div>
-    <div class="p-info-item" id="p-mobile-row"><span class="p-info-label">মোবাইল</span><span class="p-info-value" id="p-mobile"></span></div>
-    <div class="p-info-item"><span class="p-info-label">মেমো নং</span><span class="p-info-value" id="p-invno"></span></div>
-    <div class="p-info-item"><span class="p-info-label">তারিখ</span><span class="p-info-value" id="p-date"></span></div>
+  <div class="p-info-grid">
+    <div class="lbl">নাম</div><div class="val" id="p-cust"></div>
+    <div class="lbl">মেমো নং</div><div class="val" id="p-invno"></div>
+    <div class="lbl">ঠিকানা</div><div class="val" id="p-address"></div>
+    <div class="lbl">তারিখ</div><div class="val" id="p-date"></div>
+    <div class="lbl" id="p-mobile-lbl">মোবাইল</div><div class="val" id="p-mobile"></div>
+    <div></div><div></div>
   </div>
 
   <table class="p-items-table">
     <thead>
-      <tr><th>পরিমাণ</th><th>বইয়ের নাম</th><th class="num">দর</th><th class="num">মোট টাকা</th></tr>
+      <tr><th>পরিমাণ</th><th>বইয়ের নাম</th><th>লেখক</th><th class="num">দর</th><th class="num">মোট টাকা</th></tr>
     </thead>
     <tbody id="p-items"></tbody>
   </table>
@@ -406,14 +406,16 @@
     const custAddress = document.getElementById('custAddress').value.trim();
     document.getElementById('p-cust').textContent = custName || '—';
     document.getElementById('p-address').textContent = custAddress || '—';
-    const mobileRow = document.getElementById('p-mobile-row');
-    if(custMobile){ mobileRow.style.display = ''; document.getElementById('p-mobile').textContent = custMobile; }
-    else{ mobileRow.style.display = 'none'; }
+    const mobileLbl = document.getElementById('p-mobile-lbl');
+    const mobileVal = document.getElementById('p-mobile');
+    if(custMobile){ mobileLbl.style.display = ''; mobileVal.style.display = ''; mobileVal.textContent = custMobile; }
+    else{ mobileLbl.style.display = 'none'; mobileVal.style.display = 'none'; }
 
     document.getElementById('p-items').innerHTML = cart.map(item => `
       <tr>
         <td class="num">${item.qty}</td>
-        <td>${escapeHtml(item.name)}${item.author ? `<span class="p-book-author">${escapeHtml(item.author)}</span>` : ''}</td>
+        <td>${escapeHtml(item.name)}</td>
+        <td>${escapeHtml(item.author || '')}</td>
         <td class="num">${fmt(item.price)}</td>
         <td class="num">${fmt(item.price * item.qty)}</td>
       </tr>
