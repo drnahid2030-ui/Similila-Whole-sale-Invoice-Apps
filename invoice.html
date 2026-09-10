@@ -62,6 +62,15 @@
   .hist-item{ border:1px solid var(--line); border-radius:var(--radius); padding:11px 13px; margin-bottom:10px; font-size:13px; }
   .hist-row{ display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; }
   .hist-books{ color:var(--ink-soft); margin-bottom:6px; font-size:12.5px; }
+  .hist-toggle{ color:var(--forest); font-size:12px; cursor:pointer; text-decoration:underline; margin-top:6px; display:inline-block; }
+  .hist-detail{ display:none; margin-top:10px; border-top:1px dashed var(--line); padding-top:9px; }
+  .hist-detail.show{ display:block; }
+  .hist-detail table{ width:100%; font-size:12.5px; border-collapse:collapse; margin-bottom:8px; }
+  .hist-detail th{ text-align:left; padding:4px 4px; font-size:11.5px; color:var(--ink-soft); border-bottom:1px solid var(--line); }
+  .hist-detail td{ padding:5px 4px; border-bottom:1px solid var(--paper-2); }
+  .hist-detail .num{ text-align:right; }
+  .hist-breakdown{ font-size:12.5px; line-height:1.8; color:var(--ink); }
+  .hist-breakdown b{ color:var(--forest); }
   button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease, background .15s ease; }
   button.btn:active{ transform:scale(0.97); }
   .btn-primary{ background:var(--forest); color:var(--white); }
@@ -264,7 +273,10 @@
 
       <div class="actions-bar">
         <button class="btn btn-ghost" id="clearCartBtn">খালি করুন</button>
-        <button class="btn btn-primary" id="printBtn">🖨️ প্রিন্ট করুন</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-ghost" id="saveBtn">💾 সেভ করুন</button>
+          <button class="btn btn-primary" id="printBtn">🖨️ প্রিন্ট করুন</button>
+        </div>
       </div>
     </div>
   </div>
@@ -534,17 +546,6 @@
   [discountInput, prevDueInput, deliveryInput, paidInput].forEach(el => el.addEventListener('input', updateTotals));
   paidCheckbox.addEventListener('change', updateTotals);
 
-  document.getElementById('clearCartBtn').addEventListener('click', ()=>{
-    if(cart.length && !confirm('ইনভয়েস খালি করতে চান?')) return;
-    cart = [];
-    discountInput.value = 0;
-    prevDueInput.value = 0;
-    deliveryInput.value = 0;
-    paidInput.value = 0;
-    paidCheckbox.checked = false;
-    renderCart();
-  });
-
   // ---- Customer ID ----
   const custId = document.getElementById('custId');
   const custName = document.getElementById('custName');
@@ -655,14 +656,17 @@
     loadCustBtn.disabled = false;
   });
 
-  function renderHistory(id, list){
+  let currentHistoryList = [];
+
+  function renderHistoryList(id, list){
+    currentHistoryList = list;
     historyTitle.textContent = 'ক্রয়ের ইতিহাস — ' + id;
     if(list.length === 0){
       historyBody.innerHTML = '<p style="color:var(--ink-soft); font-size:14px;">এই কাস্টমারের কোনো আগের ইনভয়েস পাওয়া যায়নি।</p>';
       return;
     }
-    historyBody.innerHTML = list.map(inv => `
-      <div class="hist-item">
+    historyBody.innerHTML = list.map((inv, idx) => `
+      <div class="hist-item" data-hidx="${idx}" style="cursor:pointer;">
         <div class="hist-row"><b>${escapeHtml(inv.invNo || '')}</b><span>${escapeHtml(inv.date || '')}</span></div>
         <div class="hist-books">${(inv.items || []).map(i => escapeHtml(i.name) + ' × ' + i.qty).join(', ')}</div>
         <div class="hist-row">
@@ -670,8 +674,72 @@
           <span>জমা: ${fmt(inv.paid || 0)}</span>
           <span style="color:${(inv.due || 0) > 0 ? 'var(--danger)' : 'var(--forest)'}; font-weight:600;">বাকি: ${fmt(inv.due || 0)}</span>
         </div>
+        <div style="font-size:11.5px; color:var(--forest); margin-top:4px;">বিস্তারিত দেখতে ক্লিক করুন →</div>
       </div>
     `).join('');
+    historyBody.querySelectorAll('[data-hidx]').forEach(el=>{
+      el.addEventListener('click', ()=> showHistoryDetail(parseInt(el.dataset.hidx)));
+    });
+  }
+
+  function showHistoryDetail(idx){
+    const inv = currentHistoryList[idx];
+    if(!inv) return;
+    historyTitle.textContent = (inv.invNo || 'ইনভয়েস') + ' — বিস্তারিত';
+    const rows = (inv.items || []).map(i => `
+      <tr>
+        <td style="padding:6px 4px; font-size:13px; border-bottom:1px solid var(--paper-2);">${escapeHtml(i.name)}${i.author ? ` <span style="color:var(--ink-soft); font-size:11.5px;">(${escapeHtml(i.author)})</span>` : ''}</td>
+        <td class="num" style="padding:6px 4px; font-size:13px; border-bottom:1px solid var(--paper-2);">${i.qty}</td>
+        <td class="num" style="padding:6px 4px; font-size:13px; border-bottom:1px solid var(--paper-2);">${fmt(i.price)}</td>
+        <td class="num" style="padding:6px 4px; font-size:13px; border-bottom:1px solid var(--paper-2);">${fmt(i.price * i.qty)}</td>
+      </tr>
+    `).join('');
+    const line = (label, val) => `<div style="display:flex; justify-content:space-between;"><span>${label}</span><b>${fmt(val)}</b></div>`;
+    historyBody.innerHTML = `
+      <div style="margin-bottom:12px; font-size:13px; color:var(--ink-soft);">
+        তারিখ: ${escapeHtml(inv.date || '')}${inv.customerName ? ' • ক্রেতা: ' + escapeHtml(inv.customerName) : ''}
+      </div>
+      <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+        <thead><tr>
+          <th style="text-align:left; font-size:12px; color:var(--ink-soft); padding:6px 4px; border-bottom:1px solid var(--line);">বই</th>
+          <th class="num" style="font-size:12px; color:var(--ink-soft); padding:6px 4px; border-bottom:1px solid var(--line);">পরিমাণ</th>
+          <th class="num" style="font-size:12px; color:var(--ink-soft); padding:6px 4px; border-bottom:1px solid var(--line);">দর</th>
+          <th class="num" style="font-size:12px; color:var(--ink-soft); padding:6px 4px; border-bottom:1px solid var(--line);">সাবটোটাল</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:13.5px; line-height:1.8;">
+        ${line('মোট (আইটেম)', inv.subtotal || 0)}
+        ${inv.discount > 0 ? line('ছাড়', inv.discount) : ''}
+        ${line('এই ইনভয়েসের মোট', inv.itemsNet || 0)}
+        ${inv.prevDue > 0 ? line('পূর্বের বকেয়া', inv.prevDue) : ''}
+        ${inv.delivery > 0 ? line('ডেলিভারি চার্জ', inv.delivery) : ''}
+        <div style="display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:6px; margin-top:4px;"><span>সর্বমোট বকেয়া</span><b>${fmt(inv.grandPayable || 0)}</b></div>
+        ${line('জমা', inv.paid || 0)}
+        <div style="display:flex; justify-content:space-between; color:${(inv.due || 0) > 0 ? 'var(--danger)' : 'var(--forest)'};"><span>বাকি</span><b>${fmt(inv.due || 0)}</b></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <button class="btn btn-ghost btn-sm" id="backToHistoryBtn" type="button">← তালিকায় ফিরুন</button>
+        <button class="btn btn-primary btn-sm" id="reprintBtn" type="button">🖨️ পুনরায় প্রিন্ট করুন</button>
+      </div>
+    `;
+    document.getElementById('backToHistoryBtn').addEventListener('click', ()=> renderHistoryList(custId.value.trim(), currentHistoryList));
+    document.getElementById('reprintBtn').addEventListener('click', ()=>{
+      fillPrintSheet({
+        customerId: inv.customerId || '',
+        customerName: inv.customerName || '',
+        address: inv.address || '',
+        mobile: inv.mobile || '',
+        invNo: inv.invNo || '',
+        date: inv.date || '',
+        items: inv.items || [],
+        subtotal: inv.subtotal || 0, discount: inv.discount || 0, itemsNet: inv.itemsNet || 0,
+        prevDue: inv.prevDue || 0, delivery: inv.delivery || 0, grandPayable: inv.grandPayable || 0,
+        paid: inv.paid || 0, due: inv.due || 0
+      });
+      historyModal.classList.remove('show');
+      window.print();
+    });
   }
 
   historyBtn.addEventListener('click', async ()=>{
@@ -681,7 +749,7 @@
     try{
       const snap = await getDocs(query(invoicesCol, where('customerId', '==', id)));
       const list = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
-      renderHistory(id, list);
+      renderHistoryList(id, list);
       historyModal.classList.add('show');
     }catch(e){
       showToast('ইতিহাস লোড করতে সমস্যা হয়েছে: ' + e.message, 'err');
@@ -702,33 +770,46 @@
     document.getElementById('invDate').value = new Date().toLocaleDateString('en-GB');
   }
 
-  document.getElementById('printBtn').addEventListener('click', ()=>{
-    if(cart.length === 0){
-      alert('প্রিন্ট করার আগে অন্তত একটি বই যোগ করুন।');
-      return;
-    }
-    document.getElementById('p-invno').textContent = document.getElementById('invNo').value;
-    document.getElementById('p-date').textContent = document.getElementById('invDate').value;
+  // ---- Shared: gather current form/cart state ----
+  function buildInvoiceData(){
+    const subtotal = getSubtotal();
+    const discount = getDiscount();
+    const itemsNet = Math.max(0, subtotal - discount);
+    const prevDue = getPrevDue();
+    const delivery = getDelivery();
+    const grandPayable = itemsNet + prevDue + delivery;
+    const paid = parseAmt(paidInput.value);
+    const due = Math.max(0, grandPayable - paid);
+    return {
+      customerId: custId.value.trim(),
+      customerName: custName.value.trim(),
+      address: custAddress.value.trim(),
+      mobile: custMobile.value.trim(),
+      invNo: document.getElementById('invNo').value,
+      date: document.getElementById('invDate').value,
+      items: cart.map(i => ({ name: i.name, author: i.author || '', price: i.price, qty: i.qty })),
+      subtotal, discount, itemsNet, prevDue, delivery, grandPayable, paid, due
+    };
+  }
 
-    const nameVal = custName.value.trim();
-    const mobileVal = custMobile.value.trim();
-    const addressVal = custAddress.value.trim();
-    const idVal = custId.value.trim();
-
-    document.getElementById('p-cust').textContent = nameVal || '—';
-    document.getElementById('p-address').textContent = addressVal || '—';
+  // ---- Shared: fill the print memo from any invoice-data object ----
+  function fillPrintSheet(data){
+    document.getElementById('p-invno').textContent = data.invNo;
+    document.getElementById('p-date').textContent = data.date;
+    document.getElementById('p-cust').textContent = data.customerName || '—';
+    document.getElementById('p-address').textContent = data.address || '—';
 
     const mobileLbl = document.getElementById('p-mobile-lbl');
     const mobileValEl = document.getElementById('p-mobile');
-    if(mobileVal){ mobileLbl.style.display = ''; mobileValEl.style.display = ''; mobileValEl.textContent = mobileVal; }
+    if(data.mobile){ mobileLbl.style.display = ''; mobileValEl.style.display = ''; mobileValEl.textContent = data.mobile; }
     else{ mobileLbl.style.display = 'none'; mobileValEl.style.display = 'none'; }
 
     const custIdLbl = document.getElementById('p-custid-lbl');
-    const custIdVal = document.getElementById('p-custid');
-    if(idVal){ custIdLbl.style.display = ''; custIdVal.style.display = ''; custIdVal.textContent = idVal; }
-    else{ custIdLbl.style.display = 'none'; custIdVal.style.display = 'none'; }
+    const custIdValEl = document.getElementById('p-custid');
+    if(data.customerId){ custIdLbl.style.display = ''; custIdValEl.style.display = ''; custIdValEl.textContent = data.customerId; }
+    else{ custIdLbl.style.display = 'none'; custIdValEl.style.display = 'none'; }
 
-    document.getElementById('p-items').innerHTML = cart.map(item => `
+    document.getElementById('p-items').innerHTML = data.items.map(item => `
       <tr>
         <td class="num">${item.qty}</td>
         <td>${escapeHtml(item.name)}</td>
@@ -738,55 +819,87 @@
       </tr>
     `).join('');
 
-    const subtotal = getSubtotal();
-    const discount = getDiscount();
-    const itemsNet = Math.max(0, subtotal - discount);
-    const prevDue = getPrevDue();
-    const delivery = getDelivery();
-    const grandPayable = itemsNet + prevDue + delivery;
-    const paid = parseAmt(paidInput.value);
-    const due = Math.max(0, grandPayable - paid);
-
-    document.getElementById('p-subtotal').textContent = fmt(subtotal);
+    document.getElementById('p-subtotal').textContent = fmt(data.subtotal);
     const discountRow = document.getElementById('p-discount-row');
-    if(discount > 0){ discountRow.style.display = ''; document.getElementById('p-discount').textContent = fmt(discount); }
+    if(data.discount > 0){ discountRow.style.display = ''; document.getElementById('p-discount').textContent = fmt(data.discount); }
     else{ discountRow.style.display = 'none'; }
-    document.getElementById('p-items-net').textContent = fmt(itemsNet);
+    document.getElementById('p-items-net').textContent = fmt(data.itemsNet);
 
     const prevDueRow = document.getElementById('p-prevdue-row');
-    if(prevDue > 0){ prevDueRow.style.display = ''; document.getElementById('p-prevdue').textContent = fmt(prevDue); }
+    if(data.prevDue > 0){ prevDueRow.style.display = ''; document.getElementById('p-prevdue').textContent = fmt(data.prevDue); }
     else{ prevDueRow.style.display = 'none'; }
 
     const deliveryRow = document.getElementById('p-delivery-row');
-    if(delivery > 0){ deliveryRow.style.display = ''; document.getElementById('p-delivery').textContent = fmt(delivery); }
+    if(data.delivery > 0){ deliveryRow.style.display = ''; document.getElementById('p-delivery').textContent = fmt(data.delivery); }
     else{ deliveryRow.style.display = 'none'; }
 
-    document.getElementById('p-grandpayable').textContent = fmt(grandPayable);
-    document.getElementById('p-paid').textContent = fmt(paid);
-    document.getElementById('p-due').textContent = fmt(due);
-    document.getElementById('p-paidStamp').style.display = (due <= 0 && paid > 0) ? 'inline-block' : 'none';
-    document.getElementById('p-words').textContent = numberToWords(grandPayable) + ' TAKA ONLY.';
+    document.getElementById('p-grandpayable').textContent = fmt(data.grandPayable);
+    document.getElementById('p-paid').textContent = fmt(data.paid);
+    document.getElementById('p-due').textContent = fmt(data.due);
+    document.getElementById('p-paidStamp').style.display = (data.due <= 0 && data.paid > 0) ? 'inline-block' : 'none';
+    document.getElementById('p-words').textContent = numberToWords(data.grandPayable) + ' TAKA ONLY.';
+  }
 
+  // ---- Shared: write the invoice + sync customer balance to Firestore ----
+  async function persistInvoice(data){
+    if(data.customerId){
+      await setDoc(doc(db, 'customers', data.customerId), {
+        name: data.customerName, address: data.address, mobile: data.mobile, due: data.due, updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    await addDoc(invoicesCol, {
+      ...data,
+      customerId: data.customerId || null,
+      createdAtMillis: Date.now(),
+      createdAt: serverTimestamp()
+    });
+  }
+
+  document.getElementById('printBtn').addEventListener('click', ()=>{
+    if(cart.length === 0){
+      alert('প্রিন্ট করার আগে অন্তত একটি বই যোগ করুন।');
+      return;
+    }
+    const data = buildInvoiceData();
+    fillPrintSheet(data);
     window.print();
     setInvoiceMeta();
+    persistInvoice(data).catch(()=>{ /* non-critical, save button remains available */ });
+  });
 
-    // Keep the customer's running balance in sync, and log this invoice for purchase history (non-blocking)
-    if(idVal){
-      setDoc(doc(db, 'customers', idVal), {
-        name: nameVal, address: addressVal, mobile: mobileVal, due, updatedAt: serverTimestamp()
-      }, { merge: true }).catch(()=>{ /* non-critical */ });
-
-      addDoc(invoicesCol, {
-        customerId: idVal,
-        customerName: nameVal,
-        invNo: document.getElementById('invNo').value,
-        date: document.getElementById('invDate').value,
-        items: cart.map(i => ({ name: i.name, author: i.author || '', price: i.price, qty: i.qty })),
-        subtotal, discount, itemsNet, prevDue, delivery, grandPayable, paid, due,
-        createdAtMillis: Date.now(),
-        createdAt: serverTimestamp()
-      }).catch(()=>{ /* non-critical */ });
+  document.getElementById('saveBtn').addEventListener('click', async ()=>{
+    if(cart.length === 0){
+      showToast('সেভ করার আগে অন্তত একটি বই যোগ করুন।', 'err');
+      return;
     }
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    try{
+      const data = buildInvoiceData();
+      await persistInvoice(data);
+      showToast('ইনভয়েস সেভ হয়েছে।', 'ok');
+      playDing();
+    }catch(e){
+      showToast('সেভ করতে সমস্যা হয়েছে: ' + e.message, 'err');
+    }
+    saveBtn.disabled = false;
+  });
+
+  document.getElementById('clearCartBtn').addEventListener('click', ()=>{
+    if((cart.length || custName.value.trim()) && !confirm('পুরো ইনভয়েস ফর্ম খালি করতে চান?')) return;
+    cart = [];
+    discountInput.value = 0;
+    prevDueInput.value = 0;
+    deliveryInput.value = 0;
+    paidInput.value = 0;
+    paidCheckbox.checked = false;
+    custId.value = '';
+    custName.value = '';
+    custAddress.value = '';
+    custMobile.value = '';
+    custSuggest.classList.remove('show');
+    setInvoiceMeta();
+    renderCart();
   });
 
   setInvoiceMeta();
