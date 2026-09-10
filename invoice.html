@@ -360,8 +360,8 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, onSnapshot, query, orderBy,
-    doc, getDoc, setDoc, addDoc, deleteDoc, runTransaction, serverTimestamp,
-    where, getDocs
+    doc, getDoc, setDoc, addDoc, deleteDoc, updateDoc, runTransaction, serverTimestamp,
+    where, getDocs, increment
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -902,7 +902,7 @@
       mobile: custMobile.value.trim(),
       invNo: document.getElementById('invNo').value,
       date: document.getElementById('invDate').value,
-      items: cart.map(i => ({ name: i.name, author: i.author || '', price: i.price, qty: i.qty })),
+      items: cart.map(i => ({ productId: i.id, name: i.name, author: i.author || '', price: i.price, qty: i.qty })),
       subtotal, discount, itemsNet, prevDue, delivery, grandPayable, paid, due
     };
   }
@@ -956,6 +956,7 @@
   }
 
   // ---- Shared: write the invoice + sync customer balance to Firestore ----
+  const LOW_STOCK_THRESHOLD = 5;
   async function persistInvoice(data){
     if(data.customerId){
       await setDoc(doc(db, 'customers', data.customerId), {
@@ -968,6 +969,25 @@
       createdAtMillis: Date.now(),
       createdAt: serverTimestamp()
     });
+
+    // Deduct sold quantity from stock, and collect any books that are now low/out of stock
+    const lowStockNotes = [];
+    for(const item of data.items){
+      if(!item.productId) continue;
+      const before = products.find(p => p.id === item.productId);
+      try{
+        await updateDoc(doc(db, 'products', item.productId), { qty: increment(-item.qty) });
+        if(before && before.qty != null){
+          const after = before.qty - item.qty;
+          if(after <= LOW_STOCK_THRESHOLD){
+            lowStockNotes.push(item.name + ' (' + (after <= 0 ? 'স্টক শেষ' : after + ' টি বাকি') + ')');
+          }
+        }
+      }catch(e){ /* stock update is non-critical to the invoice itself */ }
+    }
+    if(lowStockNotes.length){
+      showToast('স্টক কমে গেছে — ' + lowStockNotes.join(', '), 'err');
+    }
   }
 
   document.getElementById('printBtn').addEventListener('click', ()=>{

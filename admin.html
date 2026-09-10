@@ -148,7 +148,7 @@
     </div>
 
     <div class="panel">
-      <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>) <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">• মোট মূল্য: <b id="prodTotalValue" style="color:var(--forest);">৳ 0</b></span></h2>
+      <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>) <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">• মোট মূল্য: <b id="prodTotalValue" style="color:var(--forest);">৳ 0</b></span> <span id="lowStockBadge" style="font-size:12.5px; color:#B7791F; font-weight:600; display:none;"></span></h2>
       <div class="search-wrap">
         <input type="text" id="bookSearch" placeholder="বইয়ের নাম বা লেখক দিয়ে খুঁজুন...">
         <div class="book-suggest" id="bookSuggest"></div>
@@ -245,6 +245,7 @@
   const bookSearch = document.getElementById('bookSearch');
   const bookSuggest = document.getElementById('bookSuggest');
   const prodTotalValue = document.getElementById('prodTotalValue');
+  const lowStockBadge = document.getElementById('lowStockBadge');
 
   clearFilterBtn.addEventListener('click', ()=>{
     activeCategoryFilter = null;
@@ -389,6 +390,14 @@
     prodCount.textContent = isFiltered ? `${filtered.length} / ${products.length}` : products.length;
     prodTotalValue.textContent = fmt(filtered.reduce((sum, p) => sum + (p.price || 0) * (p.qty != null ? p.qty : 1), 0));
 
+    const lowCount = products.filter(p => p.qty != null && p.qty <= 5).length;
+    if(lowCount > 0){
+      lowStockBadge.style.display = '';
+      lowStockBadge.textContent = '⚠ কম/শেষ স্টক: ' + lowCount + ' টি বই';
+    } else {
+      lowStockBadge.style.display = 'none';
+    }
+
     if(filtered.length === 0){
       productBody.innerHTML = `<tr class="empty-row"><td colspan="6">${isFiltered ? 'কোনো বই পাওয়া যায়নি' : 'কোনো বই যোগ করা হয়নি'}</td></tr>`;
       return;
@@ -399,7 +408,7 @@
         <td>${escapeHtml(p.author || '')}</td>
         <td>${escapeHtml(p.category || '—')}</td>
         <td class="num">${fmt(p.price)}</td>
-        <td class="num" style="${p.qty === 0 ? 'color:var(--danger); font-weight:600;' : ''}">${p.qty != null ? p.qty : '—'}</td>
+        <td class="num" style="${p.qty === 0 ? 'color:var(--danger); font-weight:600;' : (p.qty != null && p.qty <= 5 ? 'color:#B7791F; font-weight:600;' : '')}">${p.qty != null ? p.qty : '—'}</td>
         <td class="num">
           <button class="btn btn-ghost btn-sm" data-edit="${p.id}">এডিট</button>
           <button class="btn btn-danger btn-sm" data-del="${p.id}">মুছুন</button>
