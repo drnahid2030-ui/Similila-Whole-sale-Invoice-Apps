@@ -195,6 +195,10 @@
 
   const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
   const escapeHtml = str => { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; };
+  // Bengali text typed via different keyboards/IMEs can produce visually-identical strings
+  // with different Unicode byte sequences (NFC vs NFD) or stray double-spaces — normalize
+  // before any name/author comparison so duplicates and search actually match correctly.
+  const normText = s => (s || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
 
   const toast = document.getElementById('toast');
   function showStatus(msg, type){
@@ -255,10 +259,10 @@
 
   bookSearch.addEventListener('input', ()=>{
     renderProducts();
-    const q = bookSearch.value.trim().toLowerCase();
+    const q = normText(bookSearch.value);
     if(!q){ bookSuggest.classList.remove('show'); bookSuggest.innerHTML = ''; return; }
     const matches = products.filter(p =>
-      p.name.toLowerCase().includes(q) || (p.author && p.author.toLowerCase().includes(q))
+      normText(p.name).includes(q) || normText(p.author || '').includes(q)
     ).slice(0, 8);
     if(matches.length === 0){ bookSuggest.classList.remove('show'); bookSuggest.innerHTML = ''; return; }
     bookSuggest.innerHTML = matches.map(p => `
@@ -371,11 +375,11 @@
   });
 
   function renderProducts(){
-    const q = bookSearch.value.trim().toLowerCase();
+    const q = normText(bookSearch.value);
     let filtered = activeCategoryFilter ? products.filter(p => p.category === activeCategoryFilter) : products;
     if(q){
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(q) || (p.author && p.author.toLowerCase().includes(q))
+        normText(p.name).includes(q) || normText(p.author || '').includes(q)
       );
     }
 
@@ -445,8 +449,8 @@
   }
 
   saveProductBtn.addEventListener('click', async ()=>{
-    const name = pName.value.trim();
-    const author = pAuthor.value.trim();
+    const name = pName.value.normalize('NFC').replace(/\s+/g, ' ').trim();
+    const author = pAuthor.value.normalize('NFC').replace(/\s+/g, ' ').trim();
     const category = pCategory.value;
     const price = parseFloat(toEnglishDigits(pPrice.value));
     const qtyRaw = toEnglishDigits(pQty.value).trim();
@@ -456,8 +460,8 @@
       return;
     }
     const dup = products.find(p =>
-      p.name.trim().toLowerCase() === name.toLowerCase() &&
-      (p.author || '').trim().toLowerCase() === author.toLowerCase() &&
+      normText(p.name) === normText(name) &&
+      normText(p.author || '') === normText(author) &&
       p.id !== editingId
     );
     if(dup){

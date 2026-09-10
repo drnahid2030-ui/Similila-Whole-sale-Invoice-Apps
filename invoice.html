@@ -95,6 +95,7 @@
   .result-item:hover{ border-color:var(--forest-2); background:var(--paper-2); transform:translateX(2px); }
   .result-item .rname{ font-weight:600; }
   .result-item .rauthor{ display:block; font-size:12px; color:var(--ink-soft); font-weight:400; margin-top:1px; }
+  .result-item .rstock{ display:block; font-size:11px; font-weight:600; margin-top:1px; }
   .result-item .rprice{ color:var(--forest); font-weight:600; white-space:nowrap; margin-left:12px; }
   .no-results{ color:var(--ink-soft); font-style:italic; padding:10px 2px; font-size:14px; }
   .cart-author{ display:block; font-size:12px; color:var(--ink-soft); margin-top:1px; }
@@ -384,6 +385,7 @@
   let cart = [];
 
   const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+  const LOW_STOCK_THRESHOLD = 5;
   const escapeHtml = str => { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; };
 
   // ---- Toast + sound feedback ----
@@ -472,12 +474,16 @@
       resultsBox.innerHTML = '<div class="no-results">কোনো বই পাওয়া যায়নি</div>';
       return;
     }
-    resultsBox.innerHTML = matches.map(p => `
+    resultsBox.innerHTML = matches.map(p => {
+      const hasQty = p.qty != null;
+      const stockLabel = hasQty ? `<span class="rstock" style="color:${p.qty <= 0 ? 'var(--danger)' : (p.qty <= LOW_STOCK_THRESHOLD ? '#B8873F' : 'var(--ink-soft)')};">স্টক: ${p.qty}</span>` : '';
+      return `
       <div class="result-item" data-add="${p.id}">
-        <span class="rname">${escapeHtml(p.name)}${p.author ? `<span class="rauthor">${escapeHtml(p.author)}</span>` : ''}</span>
+        <span class="rname">${escapeHtml(p.name)}${p.author ? `<span class="rauthor">${escapeHtml(p.author)}</span>` : ''}${stockLabel}</span>
         <span class="rprice">${fmt(p.price)}</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
     resultsBox.querySelectorAll('[data-add]').forEach(el=>{
       el.addEventListener('click', ()=> addToCart(el.dataset.add));
     });
@@ -956,7 +962,6 @@
   }
 
   // ---- Shared: write the invoice + sync customer balance to Firestore ----
-  const LOW_STOCK_THRESHOLD = 5;
   async function persistInvoice(data){
     if(data.customerId){
       await setDoc(doc(db, 'customers', data.customerId), {
