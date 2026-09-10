@@ -47,6 +47,21 @@
   .toast{ position:fixed; top:22px; right:22px; background:var(--forest); color:#fff; padding:14px 20px; border-radius:var(--radius); font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:translateX(130%); opacity:0; transition:transform .35s ease, opacity .35s ease; z-index:1000; max-width:320px; }
   .toast.show{ transform:translateX(0); opacity:1; }
   .toast.err{ background:var(--danger); }
+  .cust-suggest{ position:absolute; top:100%; left:0; right:0; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); margin-top:4px; max-height:230px; overflow-y:auto; z-index:60; box-shadow:0 10px 24px rgba(0,0,0,0.1); display:none; }
+  .cust-suggest.show{ display:block; }
+  .cust-suggest-item{ padding:9px 14px; cursor:pointer; font-size:13.5px; border-bottom:1px solid var(--paper-2); }
+  .cust-suggest-item:last-child{ border-bottom:none; }
+  .cust-suggest-item:hover{ background:var(--paper-2); }
+  .cust-suggest-item .csid{ color:var(--forest); font-weight:700; margin-right:7px; }
+  .cust-suggest-item .csmeta{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .modal-overlay{ position:fixed; inset:0; background:rgba(21,32,22,0.55); display:none; align-items:center; justify-content:center; z-index:2000; padding:20px; }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{ background:var(--white); border-radius:8px; max-width:520px; width:100%; max-height:82vh; overflow-y:auto; padding:22px; animation:fadeUp .25s ease both; }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  .modal-head h3{ margin:0; font-size:17px; font-family:'Tiro Bangla', serif; }
+  .hist-item{ border:1px solid var(--line); border-radius:var(--radius); padding:11px 13px; margin-bottom:10px; font-size:13px; }
+  .hist-row{ display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .hist-books{ color:var(--ink-soft); margin-bottom:6px; font-size:12.5px; }
   button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease, background .15s ease; }
   button.btn:active{ transform:scale(0.97); }
   .btn-primary{ background:var(--forest); color:var(--white); }
@@ -153,17 +168,19 @@
       <div class="form-row" style="margin-bottom:14px;">
         <div class="field">
           <label>কাস্টমার আইডি (ঐচ্ছিক)</label>
-          <div class="id-row">
+          <div class="id-row" style="flex-wrap:wrap;">
             <input type="text" id="custId" placeholder="যেমনঃ CUST-0001">
             <button class="btn btn-ghost btn-sm" id="loadCustBtn" type="button">🔍 লোড</button>
-            <button class="btn btn-ghost btn-sm" id="newCustBtn" type="button">🆕 নতুন আইডি</button>
+            <button class="btn btn-ghost btn-sm" id="newCustBtn" type="button">🆕 নতুন কাস্টমার সেভ করুন</button>
+            <button class="btn btn-ghost btn-sm" id="historyBtn" type="button">🕘 ইতিহাস</button>
           </div>
         </div>
       </div>
       <div class="form-row" style="margin-bottom:14px;">
-        <div class="field">
-          <label>ক্রেতার নাম (ঐচ্ছিক)</label>
-          <input type="text" id="custName" placeholder="ক্রেতার নাম">
+        <div class="field" style="position:relative;">
+          <label>ক্রেতার নাম (ঐচ্ছিক) — টাইপ করলে আগের কাস্টমার সাজেস্ট হবে</label>
+          <input type="text" id="custName" placeholder="ক্রেতার নাম" autocomplete="off">
+          <div class="cust-suggest" id="custSuggest"></div>
         </div>
         <div class="field">
           <label>মোবাইল নম্বর (ঐচ্ছিক)</label>
@@ -301,11 +318,23 @@
   </div>
 </div>
 
+<!-- ===== PURCHASE HISTORY MODAL ===== -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="historyTitle">ক্রয়ের ইতিহাস</h3>
+      <button class="btn btn-ghost btn-sm" id="closeHistoryBtn" type="button">✕ বন্ধ করুন</button>
+    </div>
+    <div id="historyBody"></div>
+  </div>
+</div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
     getFirestore, collection, onSnapshot, query, orderBy,
-    doc, getDoc, setDoc, runTransaction, serverTimestamp
+    doc, getDoc, setDoc, addDoc, runTransaction, serverTimestamp,
+    where, getDocs
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -321,8 +350,10 @@
   const db = getFirestore(app);
   const productsCol = collection(db, "products");
   const customersCol = collection(db, "customers");
+  const invoicesCol = collection(db, "invoices");
 
   let products = [];
+  let customers = [];
   let cart = [];
 
   const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
@@ -521,6 +552,52 @@
   const custAddress = document.getElementById('custAddress');
   const loadCustBtn = document.getElementById('loadCustBtn');
   const newCustBtn = document.getElementById('newCustBtn');
+  const historyBtn = document.getElementById('historyBtn');
+  const custSuggest = document.getElementById('custSuggest');
+  const historyModal = document.getElementById('historyModal');
+  const historyTitle = document.getElementById('historyTitle');
+  const historyBody = document.getElementById('historyBody');
+  const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+
+  // Keep a live list of customers for the name-autocomplete dropdown
+  onSnapshot(query(customersCol, orderBy('name')), (snapshot)=>{
+    customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  }, (err)=>{
+    showToast('কাস্টমার তালিকা লোড করতে সমস্যা হয়েছে: ' + err.message, 'err');
+  });
+
+  function selectCustomer(id){
+    const c = customers.find(x => x.id === id);
+    if(!c) return;
+    custId.value = c.id;
+    custName.value = c.name || '';
+    custAddress.value = c.address || '';
+    custMobile.value = c.mobile || '';
+    prevDueInput.value = c.due || 0;
+    updateTotals();
+    custSuggest.classList.remove('show');
+    showToast('কাস্টমারের তথ্য লোড হয়েছে।', 'ok');
+  }
+
+  custName.addEventListener('input', ()=>{
+    const q = custName.value.trim().toLowerCase();
+    if(!q){ custSuggest.classList.remove('show'); custSuggest.innerHTML = ''; return; }
+    const matches = customers.filter(c => c.name && c.name.toLowerCase().includes(q)).slice(0, 8);
+    if(matches.length === 0){ custSuggest.classList.remove('show'); custSuggest.innerHTML = ''; return; }
+    custSuggest.innerHTML = matches.map(c => `
+      <div class="cust-suggest-item" data-cid="${escapeHtml(c.id)}">
+        <span class="csid">${escapeHtml(c.id)}</span>${escapeHtml(c.name)}
+        <span class="csmeta">${[c.mobile, c.address].filter(Boolean).map(escapeHtml).join(' • ')}</span>
+      </div>
+    `).join('');
+    custSuggest.classList.add('show');
+    custSuggest.querySelectorAll('[data-cid]').forEach(el=>{
+      el.addEventListener('click', ()=> selectCustomer(el.dataset.cid));
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if(e.target !== custName && !custSuggest.contains(e.target)) custSuggest.classList.remove('show');
+  });
 
   async function genCustomerId(){
     const counterRef = doc(db, 'meta', 'customerCounter');
@@ -577,6 +654,42 @@
     }
     loadCustBtn.disabled = false;
   });
+
+  function renderHistory(id, list){
+    historyTitle.textContent = 'ক্রয়ের ইতিহাস — ' + id;
+    if(list.length === 0){
+      historyBody.innerHTML = '<p style="color:var(--ink-soft); font-size:14px;">এই কাস্টমারের কোনো আগের ইনভয়েস পাওয়া যায়নি।</p>';
+      return;
+    }
+    historyBody.innerHTML = list.map(inv => `
+      <div class="hist-item">
+        <div class="hist-row"><b>${escapeHtml(inv.invNo || '')}</b><span>${escapeHtml(inv.date || '')}</span></div>
+        <div class="hist-books">${(inv.items || []).map(i => escapeHtml(i.name) + ' × ' + i.qty).join(', ')}</div>
+        <div class="hist-row">
+          <span>মোট: ${fmt(inv.grandPayable || 0)}</span>
+          <span>জমা: ${fmt(inv.paid || 0)}</span>
+          <span style="color:${(inv.due || 0) > 0 ? 'var(--danger)' : 'var(--forest)'}; font-weight:600;">বাকি: ${fmt(inv.due || 0)}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  historyBtn.addEventListener('click', async ()=>{
+    const id = custId.value.trim();
+    if(!id){ showToast('আগে কাস্টমার আইডি লোড বা সেভ করুন।', 'err'); return; }
+    historyBtn.disabled = true;
+    try{
+      const snap = await getDocs(query(invoicesCol, where('customerId', '==', id)));
+      const list = snap.docs.map(d => d.data()).sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+      renderHistory(id, list);
+      historyModal.classList.add('show');
+    }catch(e){
+      showToast('ইতিহাস লোড করতে সমস্যা হয়েছে: ' + e.message, 'err');
+    }
+    historyBtn.disabled = false;
+  });
+  closeHistoryBtn.addEventListener('click', ()=> historyModal.classList.remove('show'));
+  historyModal.addEventListener('click', (e)=>{ if(e.target === historyModal) historyModal.classList.remove('show'); });
 
   function genInvoiceNo(){
     const d = new Date();
@@ -657,11 +770,22 @@
     window.print();
     setInvoiceMeta();
 
-    // Keep the customer's running balance in sync for next time (non-blocking)
+    // Keep the customer's running balance in sync, and log this invoice for purchase history (non-blocking)
     if(idVal){
       setDoc(doc(db, 'customers', idVal), {
         name: nameVal, address: addressVal, mobile: mobileVal, due, updatedAt: serverTimestamp()
       }, { merge: true }).catch(()=>{ /* non-critical */ });
+
+      addDoc(invoicesCol, {
+        customerId: idVal,
+        customerName: nameVal,
+        invNo: document.getElementById('invNo').value,
+        date: document.getElementById('invDate').value,
+        items: cart.map(i => ({ name: i.name, author: i.author || '', price: i.price, qty: i.qty })),
+        subtotal, discount, itemsNet, prevDue, delivery, grandPayable, paid, due,
+        createdAtMillis: Date.now(),
+        createdAt: serverTimestamp()
+      }).catch(()=>{ /* non-critical */ });
     }
   });
 
