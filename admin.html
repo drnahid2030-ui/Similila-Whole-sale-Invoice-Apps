@@ -65,9 +65,15 @@
   .filter-bar b{ color:var(--forest); }
   .filter-bar button{ margin-left:auto; background:none; border:1px solid var(--line); border-radius:var(--radius); padding:4px 10px; font-size:12.5px; cursor:pointer; color:var(--ink-soft); }
   .filter-bar button:hover{ border-color:var(--ink-soft); color:var(--ink); }
-  .search-wrap{ margin-bottom:14px; }
+  .search-wrap{ margin-bottom:14px; position:relative; }
   .search-wrap input{ width:100%; padding:11px 14px; font-size:14.5px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; background:var(--paper); transition:border-color .15s ease, background .15s ease; }
   .search-wrap input:focus{ outline:none; border-color:var(--forest-2); background:var(--white); }
+  .book-suggest{ position:absolute; top:100%; left:0; right:0; background:var(--white); border:1px solid var(--line); border-radius:var(--radius); margin-top:4px; max-height:230px; overflow-y:auto; z-index:60; box-shadow:0 10px 24px rgba(0,0,0,0.1); display:none; }
+  .book-suggest.show{ display:block; }
+  .book-suggest-item{ padding:9px 14px; cursor:pointer; font-size:13.5px; border-bottom:1px solid var(--paper-2); }
+  .book-suggest-item:last-child{ border-bottom:none; }
+  .book-suggest-item:hover{ background:var(--paper-2); }
+  .book-suggest-item .bsauthor{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
 </style>
 </head>
 <body>
@@ -101,6 +107,10 @@
         <div class="field">
           <label>দাম (৳)</label>
           <input type="text" inputmode="decimal" id="pPrice" placeholder="মূল্য (বাংলা বা ইংরেজি সংখ্যায় লিখতে পারেন)">
+        </div>
+        <div class="field">
+          <label>পরিমাণ (স্টক)</label>
+          <input type="text" inputmode="numeric" id="pQty" placeholder="যেমনঃ 10">
         </div>
         <div class="field">
           <label>ক্যাটাগরী</label>
@@ -141,15 +151,16 @@
       <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>) <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">• মোট মূল্য: <b id="prodTotalValue" style="color:var(--forest);">৳ 0</b></span></h2>
       <div class="search-wrap">
         <input type="text" id="bookSearch" placeholder="বইয়ের নাম বা লেখক দিয়ে খুঁজুন...">
+        <div class="book-suggest" id="bookSuggest"></div>
       </div>
       <div class="filter-bar" id="filterBar">
         ক্যাটাগরী অনুযায়ী দেখানো হচ্ছে: <b id="filterBarName"></b>
         <button id="clearFilterBtn">✕ সব দেখান</button>
       </div>
       <table>
-        <thead><tr><th>বইয়ের নাম</th><th>লেখক</th><th>ক্যাটাগরী</th><th class="num">দাম</th><th></th></tr></thead>
+        <thead><tr><th>বইয়ের নাম</th><th>লেখক</th><th>ক্যাটাগরী</th><th class="num">দাম</th><th class="num">স্টক</th><th></th></tr></thead>
         <tbody id="productBody">
-          <tr class="empty-row"><td colspan="5">লোড হচ্ছে...</td></tr>
+          <tr class="empty-row"><td colspan="6">লোড হচ্ছে...</td></tr>
         </tbody>
       </table>
     </div>
@@ -217,6 +228,7 @@
   const pName = document.getElementById('pName');
   const pAuthor = document.getElementById('pAuthor');
   const pPrice = document.getElementById('pPrice');
+  const pQty = document.getElementById('pQty');
   const pCategory = document.getElementById('pCategory');
   const saveProductBtn = document.getElementById('saveProductBtn');
   const cancelEditBtn = document.getElementById('cancelEditBtn');
@@ -231,6 +243,7 @@
   const filterBarName = document.getElementById('filterBarName');
   const clearFilterBtn = document.getElementById('clearFilterBtn');
   const bookSearch = document.getElementById('bookSearch');
+  const bookSuggest = document.getElementById('bookSuggest');
   const prodTotalValue = document.getElementById('prodTotalValue');
 
   clearFilterBtn.addEventListener('click', ()=>{
@@ -239,7 +252,31 @@
     renderCategoryTable();
   });
 
-  bookSearch.addEventListener('input', renderProducts);
+  bookSearch.addEventListener('input', ()=>{
+    renderProducts();
+    const q = bookSearch.value.trim().toLowerCase();
+    if(!q){ bookSuggest.classList.remove('show'); bookSuggest.innerHTML = ''; return; }
+    const matches = products.filter(p =>
+      p.name.toLowerCase().includes(q) || (p.author && p.author.toLowerCase().includes(q))
+    ).slice(0, 8);
+    if(matches.length === 0){ bookSuggest.classList.remove('show'); bookSuggest.innerHTML = ''; return; }
+    bookSuggest.innerHTML = matches.map(p => `
+      <div class="book-suggest-item" data-bname="${escapeHtml(p.name)}">
+        ${escapeHtml(p.name)}${p.author ? `<span class="bsauthor">${escapeHtml(p.author)}</span>` : ''}
+      </div>
+    `).join('');
+    bookSuggest.classList.add('show');
+    bookSuggest.querySelectorAll('[data-bname]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        bookSearch.value = el.dataset.bname;
+        bookSuggest.classList.remove('show');
+        renderProducts();
+      });
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if(e.target !== bookSearch && !bookSuggest.contains(e.target)) bookSuggest.classList.remove('show');
+  });
 
   pPrice.addEventListener('input', ()=>{
     const pos = pPrice.selectionStart;
@@ -247,6 +284,13 @@
     let v = toEnglishDigits(before).replace(/[^0-9.]/g, '');
     pPrice.value = v;
     if(pos !== null) pPrice.setSelectionRange(pos, pos);
+  });
+
+  pQty.addEventListener('input', ()=>{
+    const pos = pQty.selectionStart;
+    let v = toEnglishDigits(pQty.value).replace(/[^0-9]/g, '');
+    pQty.value = v;
+    if(pos !== null) pQty.setSelectionRange(pos, pos);
   });
 
   // Real-time listener — keeps the list in sync automatically
@@ -343,10 +387,10 @@
 
     const isFiltered = !!(activeCategoryFilter || q);
     prodCount.textContent = isFiltered ? `${filtered.length} / ${products.length}` : products.length;
-    prodTotalValue.textContent = fmt(filtered.reduce((sum, p) => sum + (p.price || 0), 0));
+    prodTotalValue.textContent = fmt(filtered.reduce((sum, p) => sum + (p.price || 0) * (p.qty != null ? p.qty : 1), 0));
 
     if(filtered.length === 0){
-      productBody.innerHTML = `<tr class="empty-row"><td colspan="5">${isFiltered ? 'কোনো বই পাওয়া যায়নি' : 'কোনো বই যোগ করা হয়নি'}</td></tr>`;
+      productBody.innerHTML = `<tr class="empty-row"><td colspan="6">${isFiltered ? 'কোনো বই পাওয়া যায়নি' : 'কোনো বই যোগ করা হয়নি'}</td></tr>`;
       return;
     }
     productBody.innerHTML = filtered.map(p => `
@@ -355,9 +399,11 @@
         <td>${escapeHtml(p.author || '')}</td>
         <td>${escapeHtml(p.category || '—')}</td>
         <td class="num">${fmt(p.price)}</td>
+        <td class="num" style="${p.qty === 0 ? 'color:var(--danger); font-weight:600;' : ''}">${p.qty != null ? p.qty : '—'}</td>
         <td class="num">
           <button class="btn btn-ghost btn-sm" data-edit="${p.id}">এডিট</button>
           <button class="btn btn-danger btn-sm" data-del="${p.id}">মুছুন</button>
+
         </td>
       </tr>
     `).join('');
@@ -370,6 +416,7 @@
         pName.value = p.name;
         pAuthor.value = p.author || '';
         pPrice.value = p.price;
+        pQty.value = p.qty != null ? p.qty : '';
         pCategory.value = p.category || '';
         formTitle.textContent = 'বই আপডেট করুন';
         saveProductBtn.textContent = 'আপডেট করুন';
@@ -393,19 +440,25 @@
     const author = pAuthor.value.trim();
     const category = pCategory.value;
     const price = parseFloat(toEnglishDigits(pPrice.value));
+    const qtyRaw = toEnglishDigits(pQty.value).trim();
+    const qty = qtyRaw === '' ? 0 : parseInt(qtyRaw);
     if(!name || isNaN(price) || price < 0){
       showStatus('বইয়ের নাম ও সঠিক দাম দিন।', 'err');
       return;
     }
-    const dup = products.find(p => p.name.trim().toLowerCase() === name.toLowerCase() && p.id !== editingId);
+    const dup = products.find(p =>
+      p.name.trim().toLowerCase() === name.toLowerCase() &&
+      (p.author || '').trim().toLowerCase() === author.toLowerCase() &&
+      p.id !== editingId
+    );
     if(dup){
-      showStatus('এই নামে একটি বই আগে থেকেই তালিকায় আছে। আলাদা করতে চাইলে নামের সাথে লেখক/সংস্করণ যোগ করুন।', 'err');
+      showStatus('এই নাম ও লেখকের বই আগে থেকেই তালিকায় আছে।', 'err');
       return;
     }
     saveProductBtn.disabled = true;
     try{
       if(editingId){
-        await updateDoc(doc(db, 'products', editingId), { name, author, category, price });
+        await updateDoc(doc(db, 'products', editingId), { name, author, category, price, qty });
         showStatus('বই আপডেট হয়েছে।', 'ok');
         playDing();
         editingId = null;
@@ -413,11 +466,11 @@
         saveProductBtn.textContent = 'যোগ করুন';
         cancelEditWrap.style.display = 'none';
       } else {
-        await addDoc(productsCol, { name, author, category, price, createdAt: serverTimestamp() });
+        await addDoc(productsCol, { name, author, category, price, qty, createdAt: serverTimestamp() });
         showStatus('নতুন বই যোগ হয়েছে।', 'ok');
         playDing();
       }
-      pName.value = ''; pAuthor.value = ''; pPrice.value = ''; pCategory.value = '';
+      pName.value = ''; pAuthor.value = ''; pPrice.value = ''; pQty.value = ''; pCategory.value = '';
     }catch(e){
       showStatus('সেভ করতে সমস্যা হয়েছে: ' + e.message, 'err');
     }
@@ -426,7 +479,7 @@
 
   cancelEditBtn.addEventListener('click', ()=>{
     editingId = null;
-    pName.value = ''; pAuthor.value = ''; pPrice.value = ''; pCategory.value = '';
+    pName.value = ''; pAuthor.value = ''; pPrice.value = ''; pQty.value = ''; pCategory.value = '';
     formTitle.textContent = 'নতুন বই যোগ করুন';
     saveProductBtn.textContent = 'যোগ করুন';
     cancelEditWrap.style.display = 'none';
