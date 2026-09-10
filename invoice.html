@@ -32,12 +32,21 @@
   .panel:nth-of-type(1){ animation-delay:.05s; }
   .panel:nth-of-type(2){ animation-delay:.15s; }
   .panel:nth-of-type(3){ animation-delay:.25s; }
+  .panel:nth-of-type(4){ animation-delay:.35s; }
   .panel h2{ font-size:17px; margin:0 0 16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
   .form-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
   .field{ flex:1; min-width:160px; }
   .field label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px; }
   .field input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:15px; background:var(--paper); color:var(--ink); transition:border-color .15s ease, background .15s ease; }
   .field input:focus{ outline:none; border-color:var(--forest-2); background:var(--white); }
+  .field input:disabled{ opacity:0.65; }
+  .id-row{ display:flex; gap:8px; }
+  .id-row input{ flex:1; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink-soft); margin-top:12px; cursor:pointer; user-select:none; }
+  .checkbox-row input{ width:17px; height:17px; accent-color:var(--forest); cursor:pointer; }
+  .toast{ position:fixed; top:22px; right:22px; background:var(--forest); color:#fff; padding:14px 20px; border-radius:var(--radius); font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:translateX(130%); opacity:0; transition:transform .35s ease, opacity .35s ease; z-index:1000; max-width:320px; }
+  .toast.show{ transform:translateX(0); opacity:1; }
+  .toast.err{ background:var(--danger); }
   button.btn{ padding:10px 18px; border:none; border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:transform .12s ease, background .15s ease; }
   button.btn:active{ transform:scale(0.97); }
   .btn-primary{ background:var(--forest); color:var(--white); }
@@ -98,11 +107,13 @@
     .p-items-table th:first-child, .p-items-table td:first-child{ width:56px; text-align:center; }
     .p-items-table .num{ text-align:right; }
 
-    .p-summary{ display:flex; justify-content:flex-end; margin-top:8px; }
-    .p-summary table{ width:auto; min-width:230px; border-collapse:collapse; }
+    .p-summary{ display:flex; flex-direction:column; align-items:flex-end; margin-top:8px; }
+    .p-summary table{ width:auto; min-width:250px; border-collapse:collapse; }
     .p-summary td{ padding:5px 6px; font-size:13.5px; border:none; }
     .p-summary .num{ text-align:right; font-weight:600; }
-    .p-summary .p-grand-row td{ border-top:2px solid #152016; font-size:16px; font-weight:700; padding-top:9px; }
+    .p-summary .p-grand-row td{ border-top:2px solid #152016; font-size:15px; font-weight:700; padding-top:9px; }
+    .p-summary .p-due-row td{ font-size:16px; font-weight:700; color:var(--banner-2); }
+    .p-paid-stamp{ display:none; margin-top:10px; padding:6px 18px; border:2px solid var(--forest); color:var(--forest); font-weight:700; font-size:13px; border-radius:6px; transform:rotate(-6deg); letter-spacing:1px; }
 
     .p-words{ margin-top:14px; font-size:13px; }
     .p-words b{ font-weight:600; }
@@ -135,8 +146,20 @@
       <p>বই খুঁজুন, ক্লিক করে যোগ করুন — রেট ও মোট নিজে থেকেই হিসাব হয়ে যাবে।</p>
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <div class="panel">
       <h2>ক্রেতার তথ্য</h2>
+      <div class="form-row" style="margin-bottom:14px;">
+        <div class="field">
+          <label>কাস্টমার আইডি (ঐচ্ছিক)</label>
+          <div class="id-row">
+            <input type="text" id="custId" placeholder="যেমনঃ CUST-0001">
+            <button class="btn btn-ghost btn-sm" id="loadCustBtn" type="button">🔍 লোড</button>
+            <button class="btn btn-ghost btn-sm" id="newCustBtn" type="button">🆕 নতুন আইডি</button>
+          </div>
+        </div>
+      </div>
       <div class="form-row" style="margin-bottom:14px;">
         <div class="field">
           <label>ক্রেতার নাম (ঐচ্ছিক)</label>
@@ -182,12 +205,44 @@
 
       <div class="discount-row">
         <label for="discountInput">ছাড় (৳)</label>
-        <input type="number" id="discountInput" min="0" step="0.01" value="0">
+        <input type="text" inputmode="decimal" id="discountInput" value="0">
       </div>
 
       <div class="total-bar">
-        <span class="label">সর্বমোট</span>
+        <span class="label">এই ইনভয়েসের মোট</span>
         <span class="amount" id="grandTotal">৳ 0</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>পেমেন্ট তথ্য</h2>
+      <div class="form-row">
+        <div class="field">
+          <label>পূর্বের বকেয়া (৳)</label>
+          <input type="text" inputmode="decimal" id="prevDueInput" value="0">
+        </div>
+        <div class="field">
+          <label>ডেলিভারি চার্জ (৳)</label>
+          <input type="text" inputmode="decimal" id="deliveryInput" value="0">
+        </div>
+        <div class="field">
+          <label>জমা (৳)</label>
+          <input type="text" inputmode="decimal" id="paidInput" value="0">
+        </div>
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="paidCheckbox">
+        সম্পূর্ণ পরিশোধ (Paid)
+      </label>
+
+      <div class="total-bar">
+        <span class="label">সর্বমোট বকেয়া</span>
+        <span class="amount" id="grandPayable">৳ 0</span>
+      </div>
+      <div class="total-bar" style="border-top:none; margin-top:2px; padding-top:0;">
+        <span class="label">বাকি থাকবে</span>
+        <span class="amount" id="dueAmount" style="color:var(--danger);">৳ 0</span>
       </div>
 
       <div class="actions-bar">
@@ -203,7 +258,7 @@
   <div class="p-banner">
     <div>
       <div class="p-shopname">সিমিলিয়া প্রকাশনী</div>
-      <div class="p-shoptag">হোমিওপ্যাথিক ও চিকিৎসা বিষয়ক বই বিক্রেতা</div>
+      <div class="p-shoptag">সেবার পথে, সিমিলিয়ার সাথে</div>
     </div>
     <div class="p-copy-badge">কাস্টমার কপি</div>
   </div>
@@ -214,7 +269,7 @@
     <div class="lbl">ঠিকানা</div><div class="val" id="p-address"></div>
     <div class="lbl">তারিখ</div><div class="val" id="p-date"></div>
     <div class="lbl" id="p-mobile-lbl">মোবাইল</div><div class="val" id="p-mobile"></div>
-    <div></div><div></div>
+    <div class="lbl" id="p-custid-lbl">কাস্টমার আইডি</div><div class="val" id="p-custid"></div>
   </div>
 
   <table class="p-items-table">
@@ -226,10 +281,16 @@
 
   <div class="p-summary">
     <table>
-      <tr><td>মোট</td><td class="num" id="p-subtotal"></td></tr>
+      <tr><td>মোট (আইটেম)</td><td class="num" id="p-subtotal"></td></tr>
       <tr id="p-discount-row"><td>ছাড়</td><td class="num" id="p-discount"></td></tr>
-      <tr class="p-grand-row"><td>সর্বমোট</td><td class="num" id="p-total"></td></tr>
+      <tr><td>এই ইনভয়েসের মোট</td><td class="num" id="p-items-net"></td></tr>
+      <tr id="p-prevdue-row"><td>পূর্বের বকেয়া</td><td class="num" id="p-prevdue"></td></tr>
+      <tr id="p-delivery-row"><td>ডেলিভারি চার্জ</td><td class="num" id="p-delivery"></td></tr>
+      <tr class="p-grand-row"><td>সর্বমোট বকেয়া</td><td class="num" id="p-grandpayable"></td></tr>
+      <tr><td>জমা</td><td class="num" id="p-paid"></td></tr>
+      <tr class="p-due-row"><td>বর্তমান বকেয়া</td><td class="num" id="p-due"></td></tr>
     </table>
+    <div class="p-paid-stamp" id="p-paidStamp">সম্পূর্ণ পরিশোধিত</div>
   </div>
 
   <div class="p-words">কথায় : <b>(<span id="p-words"></span>)</b></div>
@@ -243,7 +304,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import {
-    getFirestore, collection, onSnapshot, query, orderBy
+    getFirestore, collection, onSnapshot, query, orderBy,
+    doc, getDoc, setDoc, runTransaction, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -258,12 +320,54 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const productsCol = collection(db, "products");
+  const customersCol = collection(db, "customers");
 
   let products = [];
   let cart = [];
 
   const fmt = n => '৳ ' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
   const escapeHtml = str => { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; };
+
+  // ---- Toast + sound feedback ----
+  const toast = document.getElementById('toast');
+  function showToast(msg, type){
+    toast.textContent = (type === 'err' ? '⚠️ ' : '✅ ') + msg;
+    toast.className = 'toast show ' + (type || 'ok');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(()=>{ toast.classList.remove('show'); }, 2600);
+  }
+  function playDing(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
+      g.gain.setValueAtTime(0.16, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.28);
+    }catch(e){ /* audio not available */ }
+  }
+
+  // ---- Bangla-digit friendly numeric inputs ----
+  const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
+  function toEnglishDigits(str){
+    return String(str).replace(/[০-৯]/g, d => BN_DIGITS.indexOf(d));
+  }
+  function bindNumericInput(el){
+    el.addEventListener('input', ()=>{
+      const pos = el.selectionStart;
+      el.value = toEnglishDigits(el.value).replace(/[^0-9.]/g, '');
+      if(pos !== null){ try{ el.setSelectionRange(pos, pos); }catch(e){} }
+    });
+  }
+  function parseAmt(v){
+    const n = parseFloat(toEnglishDigits(v));
+    return isNaN(n) || n < 0 ? 0 : n;
+  }
 
   // ---- Number to words (English, matches printed-memo convention) ----
   const ONES = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
@@ -329,10 +433,17 @@
     if(existing){ existing.qty += 1; }
     else{ cart.push({ id:p.id, name:p.name, author:p.author||'', price:p.price, qty:1 }); }
     renderCart();
+    showToast(p.name + ' যোগ হয়েছে', 'ok');
+    playDing();
   }
 
   const cartBody = document.getElementById('cartBody');
   const discountInput = document.getElementById('discountInput');
+  const prevDueInput = document.getElementById('prevDueInput');
+  const deliveryInput = document.getElementById('deliveryInput');
+  const paidInput = document.getElementById('paidInput');
+  const paidCheckbox = document.getElementById('paidCheckbox');
+  [discountInput, prevDueInput, deliveryInput, paidInput].forEach(bindNumericInput);
 
   function renderCart(){
     if(cart.length === 0){
@@ -342,7 +453,7 @@
         <tr>
           <td>${escapeHtml(item.name)}${item.author ? `<span class="cart-author">${escapeHtml(item.author)}</span>` : ''}</td>
           <td class="num">${fmt(item.price)}</td>
-          <td class="num"><input type="number" class="qty-input" min="1" value="${item.qty}" data-qty="${idx}"></td>
+          <td class="num"><input type="text" inputmode="numeric" class="qty-input" value="${item.qty}" data-qty="${idx}"></td>
           <td class="num">${fmt(item.price * item.qty)}</td>
           <td class="num"><button class="btn btn-danger btn-sm" data-remove="${idx}">✕</button></td>
         </tr>
@@ -351,7 +462,8 @@
       cartBody.querySelectorAll('[data-qty]').forEach(inp=>{
         inp.addEventListener('input', ()=>{
           const idx = parseInt(inp.dataset.qty);
-          let val = parseInt(inp.value);
+          const raw = toEnglishDigits(inp.value).replace(/[^0-9]/g, '');
+          let val = parseInt(raw);
           if(isNaN(val) || val < 1) val = 1;
           cart[idx].qty = val;
           renderCart();
@@ -364,22 +476,106 @@
         });
       });
     }
-    updateGrandTotal();
+    updateTotals();
   }
 
   function getSubtotal(){ return cart.reduce((sum, i) => sum + i.price * i.qty, 0); }
-  function getDiscount(){ const v = parseFloat(discountInput.value); return isNaN(v) || v < 0 ? 0 : v; }
-  function updateGrandTotal(){
-    const net = Math.max(0, getSubtotal() - getDiscount());
-    document.getElementById('grandTotal').textContent = fmt(net);
+  function getDiscount(){ return parseAmt(discountInput.value); }
+  function getPrevDue(){ return parseAmt(prevDueInput.value); }
+  function getDelivery(){ return parseAmt(deliveryInput.value); }
+
+  function updateTotals(){
+    const itemsNet = Math.max(0, getSubtotal() - getDiscount());
+    const grandPayable = itemsNet + getPrevDue() + getDelivery();
+    if(paidCheckbox.checked){
+      paidInput.value = grandPayable.toFixed(2).replace(/\.00$/, '');
+      paidInput.disabled = true;
+    } else {
+      paidInput.disabled = false;
+    }
+    const paid = parseAmt(paidInput.value);
+    const due = Math.max(0, grandPayable - paid);
+
+    document.getElementById('grandTotal').textContent = fmt(itemsNet);
+    document.getElementById('grandPayable').textContent = fmt(grandPayable);
+    document.getElementById('dueAmount').textContent = fmt(due);
   }
-  discountInput.addEventListener('input', updateGrandTotal);
+  [discountInput, prevDueInput, deliveryInput, paidInput].forEach(el => el.addEventListener('input', updateTotals));
+  paidCheckbox.addEventListener('change', updateTotals);
 
   document.getElementById('clearCartBtn').addEventListener('click', ()=>{
     if(cart.length && !confirm('ইনভয়েস খালি করতে চান?')) return;
     cart = [];
     discountInput.value = 0;
+    prevDueInput.value = 0;
+    deliveryInput.value = 0;
+    paidInput.value = 0;
+    paidCheckbox.checked = false;
     renderCart();
+  });
+
+  // ---- Customer ID ----
+  const custId = document.getElementById('custId');
+  const custName = document.getElementById('custName');
+  const custMobile = document.getElementById('custMobile');
+  const custAddress = document.getElementById('custAddress');
+  const loadCustBtn = document.getElementById('loadCustBtn');
+  const newCustBtn = document.getElementById('newCustBtn');
+
+  async function genCustomerId(){
+    const counterRef = doc(db, 'meta', 'customerCounter');
+    const next = await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(counterRef);
+      const n = (snap.exists() ? (snap.data().value || 0) : 0) + 1;
+      tx.set(counterRef, { value: n }, { merge: true });
+      return n;
+    });
+    return 'CUST-' + String(next).padStart(4, '0');
+  }
+
+  newCustBtn.addEventListener('click', async ()=>{
+    const name = custName.value.trim();
+    if(!name){ showToast('আইডি তৈরি করতে আগে ক্রেতার নাম লিখুন।', 'err'); return; }
+    newCustBtn.disabled = true;
+    try{
+      const id = await genCustomerId();
+      await setDoc(doc(db, 'customers', id), {
+        name,
+        address: custAddress.value.trim(),
+        mobile: custMobile.value.trim(),
+        due: getPrevDue(),
+        updatedAt: serverTimestamp()
+      });
+      custId.value = id;
+      showToast('নতুন কাস্টমার আইডি তৈরি হয়েছে: ' + id, 'ok');
+      playDing();
+    }catch(e){
+      showToast('আইডি তৈরি করতে সমস্যা হয়েছে: ' + e.message, 'err');
+    }
+    newCustBtn.disabled = false;
+  });
+
+  loadCustBtn.addEventListener('click', async ()=>{
+    const id = custId.value.trim();
+    if(!id){ showToast('কাস্টমার আইডি লিখুন।', 'err'); return; }
+    loadCustBtn.disabled = true;
+    try{
+      const snap = await getDoc(doc(db, 'customers', id));
+      if(!snap.exists()){
+        showToast('এই আইডিতে কোনো কাস্টমার পাওয়া যায়নি।', 'err');
+      } else {
+        const c = snap.data();
+        custName.value = c.name || '';
+        custAddress.value = c.address || '';
+        custMobile.value = c.mobile || '';
+        prevDueInput.value = c.due || 0;
+        updateTotals();
+        showToast('কাস্টমারের তথ্য লোড হয়েছে।', 'ok');
+      }
+    }catch(e){
+      showToast('লোড করতে সমস্যা হয়েছে: ' + e.message, 'err');
+    }
+    loadCustBtn.disabled = false;
   });
 
   function genInvoiceNo(){
@@ -401,15 +597,23 @@
     document.getElementById('p-invno').textContent = document.getElementById('invNo').value;
     document.getElementById('p-date').textContent = document.getElementById('invDate').value;
 
-    const custName = document.getElementById('custName').value.trim();
-    const custMobile = document.getElementById('custMobile').value.trim();
-    const custAddress = document.getElementById('custAddress').value.trim();
-    document.getElementById('p-cust').textContent = custName || '—';
-    document.getElementById('p-address').textContent = custAddress || '—';
+    const nameVal = custName.value.trim();
+    const mobileVal = custMobile.value.trim();
+    const addressVal = custAddress.value.trim();
+    const idVal = custId.value.trim();
+
+    document.getElementById('p-cust').textContent = nameVal || '—';
+    document.getElementById('p-address').textContent = addressVal || '—';
+
     const mobileLbl = document.getElementById('p-mobile-lbl');
-    const mobileVal = document.getElementById('p-mobile');
-    if(custMobile){ mobileLbl.style.display = ''; mobileVal.style.display = ''; mobileVal.textContent = custMobile; }
-    else{ mobileLbl.style.display = 'none'; mobileVal.style.display = 'none'; }
+    const mobileValEl = document.getElementById('p-mobile');
+    if(mobileVal){ mobileLbl.style.display = ''; mobileValEl.style.display = ''; mobileValEl.textContent = mobileVal; }
+    else{ mobileLbl.style.display = 'none'; mobileValEl.style.display = 'none'; }
+
+    const custIdLbl = document.getElementById('p-custid-lbl');
+    const custIdVal = document.getElementById('p-custid');
+    if(idVal){ custIdLbl.style.display = ''; custIdVal.style.display = ''; custIdVal.textContent = idVal; }
+    else{ custIdLbl.style.display = 'none'; custIdVal.style.display = 'none'; }
 
     document.getElementById('p-items').innerHTML = cart.map(item => `
       <tr>
@@ -423,17 +627,42 @@
 
     const subtotal = getSubtotal();
     const discount = getDiscount();
-    const net = Math.max(0, subtotal - discount);
+    const itemsNet = Math.max(0, subtotal - discount);
+    const prevDue = getPrevDue();
+    const delivery = getDelivery();
+    const grandPayable = itemsNet + prevDue + delivery;
+    const paid = parseAmt(paidInput.value);
+    const due = Math.max(0, grandPayable - paid);
 
     document.getElementById('p-subtotal').textContent = fmt(subtotal);
     const discountRow = document.getElementById('p-discount-row');
     if(discount > 0){ discountRow.style.display = ''; document.getElementById('p-discount').textContent = fmt(discount); }
     else{ discountRow.style.display = 'none'; }
-    document.getElementById('p-total').textContent = fmt(net);
-    document.getElementById('p-words').textContent = numberToWords(net) + ' TAKA ONLY.';
+    document.getElementById('p-items-net').textContent = fmt(itemsNet);
+
+    const prevDueRow = document.getElementById('p-prevdue-row');
+    if(prevDue > 0){ prevDueRow.style.display = ''; document.getElementById('p-prevdue').textContent = fmt(prevDue); }
+    else{ prevDueRow.style.display = 'none'; }
+
+    const deliveryRow = document.getElementById('p-delivery-row');
+    if(delivery > 0){ deliveryRow.style.display = ''; document.getElementById('p-delivery').textContent = fmt(delivery); }
+    else{ deliveryRow.style.display = 'none'; }
+
+    document.getElementById('p-grandpayable').textContent = fmt(grandPayable);
+    document.getElementById('p-paid').textContent = fmt(paid);
+    document.getElementById('p-due').textContent = fmt(due);
+    document.getElementById('p-paidStamp').style.display = (due <= 0 && paid > 0) ? 'inline-block' : 'none';
+    document.getElementById('p-words').textContent = numberToWords(grandPayable) + ' TAKA ONLY.';
 
     window.print();
     setInvoiceMeta();
+
+    // Keep the customer's running balance in sync for next time (non-blocking)
+    if(idVal){
+      setDoc(doc(db, 'customers', idVal), {
+        name: nameVal, address: addressVal, mobile: mobileVal, due, updatedAt: serverTimestamp()
+      }, { merge: true }).catch(()=>{ /* non-critical */ });
+    }
   });
 
   setInvoiceMeta();
