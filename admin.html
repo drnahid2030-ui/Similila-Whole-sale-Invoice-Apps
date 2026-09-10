@@ -65,6 +65,9 @@
   .filter-bar b{ color:var(--forest); }
   .filter-bar button{ margin-left:auto; background:none; border:1px solid var(--line); border-radius:var(--radius); padding:4px 10px; font-size:12.5px; cursor:pointer; color:var(--ink-soft); }
   .filter-bar button:hover{ border-color:var(--ink-soft); color:var(--ink); }
+  .search-wrap{ margin-bottom:14px; }
+  .search-wrap input{ width:100%; padding:11px 14px; font-size:14.5px; border:1px solid var(--line); border-radius:var(--radius); font-family:'Hind Siliguri', sans-serif; background:var(--paper); transition:border-color .15s ease, background .15s ease; }
+  .search-wrap input:focus{ outline:none; border-color:var(--forest-2); background:var(--white); }
 </style>
 </head>
 <body>
@@ -135,7 +138,10 @@
     </div>
 
     <div class="panel">
-      <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>)</h2>
+      <h2>সব বইয়ের তালিকা (<span id="prodCount">0</span>) <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">• মোট মূল্য: <b id="prodTotalValue" style="color:var(--forest);">৳ 0</b></span></h2>
+      <div class="search-wrap">
+        <input type="text" id="bookSearch" placeholder="বইয়ের নাম বা লেখক দিয়ে খুঁজুন...">
+      </div>
       <div class="filter-bar" id="filterBar">
         ক্যাটাগরী অনুযায়ী দেখানো হচ্ছে: <b id="filterBarName"></b>
         <button id="clearFilterBtn">✕ সব দেখান</button>
@@ -224,12 +230,16 @@
   const filterBar = document.getElementById('filterBar');
   const filterBarName = document.getElementById('filterBarName');
   const clearFilterBtn = document.getElementById('clearFilterBtn');
+  const bookSearch = document.getElementById('bookSearch');
+  const prodTotalValue = document.getElementById('prodTotalValue');
 
   clearFilterBtn.addEventListener('click', ()=>{
     activeCategoryFilter = null;
     renderProducts();
     renderCategoryTable();
   });
+
+  bookSearch.addEventListener('input', renderProducts);
 
   pPrice.addEventListener('input', ()=>{
     const pos = pPrice.selectionStart;
@@ -316,7 +326,13 @@
   });
 
   function renderProducts(){
-    const filtered = activeCategoryFilter ? products.filter(p => p.category === activeCategoryFilter) : products;
+    const q = bookSearch.value.trim().toLowerCase();
+    let filtered = activeCategoryFilter ? products.filter(p => p.category === activeCategoryFilter) : products;
+    if(q){
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) || (p.author && p.author.toLowerCase().includes(q))
+      );
+    }
 
     if(activeCategoryFilter){
       filterBar.classList.add('show');
@@ -325,10 +341,12 @@
       filterBar.classList.remove('show');
     }
 
-    prodCount.textContent = activeCategoryFilter ? `${filtered.length} / ${products.length}` : products.length;
+    const isFiltered = !!(activeCategoryFilter || q);
+    prodCount.textContent = isFiltered ? `${filtered.length} / ${products.length}` : products.length;
+    prodTotalValue.textContent = fmt(filtered.reduce((sum, p) => sum + (p.price || 0), 0));
 
     if(filtered.length === 0){
-      productBody.innerHTML = `<tr class="empty-row"><td colspan="5">${activeCategoryFilter ? 'এই ক্যাটাগরীতে কোনো বই নেই' : 'কোনো বই যোগ করা হয়নি'}</td></tr>`;
+      productBody.innerHTML = `<tr class="empty-row"><td colspan="5">${isFiltered ? 'কোনো বই পাওয়া যায়নি' : 'কোনো বই যোগ করা হয়নি'}</td></tr>`;
       return;
     }
     productBody.innerHTML = filtered.map(p => `
@@ -377,6 +395,11 @@
     const price = parseFloat(toEnglishDigits(pPrice.value));
     if(!name || isNaN(price) || price < 0){
       showStatus('বইয়ের নাম ও সঠিক দাম দিন।', 'err');
+      return;
+    }
+    const dup = products.find(p => p.name.trim().toLowerCase() === name.toLowerCase() && p.id !== editingId);
+    if(dup){
+      showStatus('এই নামে একটি বই আগে থেকেই তালিকায় আছে। আলাদা করতে চাইলে নামের সাথে লেখক/সংস্করণ যোগ করুন।', 'err');
       return;
     }
     saveProductBtn.disabled = true;
